@@ -70,6 +70,7 @@ def create_model():
         d = {}
         for k,v in det.items():
             d[k] = rng.normal(v, v/10)
+            
         return d    
     stoch_var = StochFunc(stoch, det, rng, det)
 

@@ -46,13 +46,19 @@ class ModelBuilder:
         self._model._template_scenario.deactivate()
 
     def apply_bigm(self):
+        """Apply bigM transformation to all constructed scenarios. This method assumes that each scenario has identical cqa constraints. 
+
+        Returns:
+            [type]: [description]
+        """
         bigM = self._model.bigM = Block()
-        bigM.cqa_idx = Set([i.local_name for i in self._opts.cqa.keys()])
+        bigM.cqa_idx = Set(initialize=[i.local_name for i in self._opts.cqa.keys()])
         bigM.indicator_var = Var(self._model.scenario_idx, initialize=0, bounds=(0,1))
-        bigM.constant = Param(initialize=self._opts.cqa, mutable=True)
+        bigM.constant = Param(bigM.cqa_idx, initialize={k.local_name: v for k,v in self._opts.cqa.items()})
         
+        #Do not use a single indexed constraint with index scenario_idx, cqa_idx because of generalisablility. 
         def r_convert_to_bigM(block, scenario_idx):
-            def convert(constr, cqa_idx, scen_idx ):
+            def convert(constr, cqa_idx, scen_idx):
                 b = constr.model().bigM
                 if (constr._lower is None) & (constr._upper is not None):
                     return Constraint(expr= \
@@ -74,9 +80,7 @@ class ModelBuilder:
                 block.add_component(cqa_idx, convert(constraint, cqa_idx, scenario_idx))
                 constraint.deactivate()
 
-            return
-
-        bigM.constraints = Block(self._model.scenario_idx, rule=r_convert_to_bigM)
+        bigM.constraint = Block(self._model.scenario_idx, rule=r_convert_to_bigM)
         self._construct_SF_objective()
 
     def _construct_SF_objective(self):
