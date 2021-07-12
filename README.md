@@ -1,1 +1,1 @@
-This is a readme file. 
+Pyomo package for probabilistic design space characterisation. 
