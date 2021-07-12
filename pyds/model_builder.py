@@ -3,7 +3,6 @@ from pyomo.core import (Param, Var, Constraint, ConstraintList, \
     Suffix, ConcreteModel, RangeSet, Set, Block, Objective, maximize)
 from numpy.random import default_rng
 #from pyomo.dae import ContinuousSet
-
 from weakref import ref as weakref_ref
 from inspect import signature
 
@@ -11,7 +10,7 @@ class ModelBuilder:
     def __init__(self, input_model):
         self._input_model = input_model
         self._model = None
-        
+        self._opts = None
         self._duration = {} #Time measurements
 
     def build(self, n_scenarios):
@@ -19,9 +18,7 @@ class ModelBuilder:
         self.apply_bigm()
         return self._model
 
-
     def build_scenarios(self, n_scenarios):
-        
         m_tmp = self._input_model.clone()
         if not isinstance(m_tmp._pyds_opts, ScenarioOpts):
             raise ValueError("PyDS scenario options are not found.")
@@ -50,9 +47,9 @@ class ModelBuilder:
 
     def apply_bigm(self):
         bigM = self._model.bigM = Block()
-        bigM.cqa_idx = Set(initialize=[i.local_name for i in self._opts.cqa])
+        bigM.cqa_idx = Set([i.local_name for i in self._opts.cqa.keys()])
         bigM.indicator_var = Var(self._model.scenario_idx, initialize=0, bounds=(0,1))
-        bigM.constant = Param(bigM.cqa_idx, initialize=1, mutable=True)
+        bigM.constant = Param(initialize=self._opts.cqa, mutable=True)
         
         def r_convert_to_bigM(block, scenario_idx):
             def convert(constr, cqa_idx, scen_idx ):
@@ -90,8 +87,7 @@ class ModelBuilder:
 
 class StochFunc:
     def __init__(self, func, deterministic, *args, **kwargs):
-        """Generator function for given stochastic parameter
-
+        """Generator function for given stochastic parameter.
         Args:
             func ([type]): Function taking No or kwargs as argument
             loc (Float or dict )))
@@ -113,7 +109,6 @@ class StochFunc:
 class ScenarioOpts:
     def __init__(self, first_stage=None, stoch_param=None, cqa_constraint=None, varying_input=None):
         """Specify the stocastic scenario options and check user-provided input. 
-
         Args:
             first_stage (list of Component, optional): Components that are shared among scenarios. Defaults to None.
             stoch_param (dict of (Param, function), optional): Mapping of stochastic parameters to corresponding sampling functions. \
@@ -129,7 +124,6 @@ class ScenarioOpts:
     @property
     def first_stage(self):
         return self._first_stage
-    
     @first_stage.setter
     def first_stage(self, value):
         self._first_stage = []
@@ -144,19 +138,17 @@ class ScenarioOpts:
                 self._first_stage.append(weakref_ref(e))
             else:
                 raise TypeError("First stage component must be a valid Pyomo component")
-    
+
     @property
     def stoch_param(self):
         return self._stoch_param
-    
     @stoch_param.setter
     def stoch_param(self, value):
         self._stoch_param = {}
         if value is None:
             return
         elif not isinstance(value, dict):
-             raise TypeError("Stochastic parameters must be passed in a Python dict.")
-             
+             raise TypeError("Stochastic parameters must be passed in a Python dict.") 
         for (key, f) in value.items():
             if not (isinstance(key, Param) and isinstance (f, function)):
                 raise ValueError("Invalid stochastic parameter combination passed")
@@ -170,47 +162,8 @@ class ScenarioOpts:
     @property
     def varying_input(self):
         return self._varying_input
-    
     @varying_input.setter
     def varying_input(self, value):
         if not isinstance(value, Suffix):
             raise TypeError("Time-varying input must be a Pyomo Suffix")
         self._varying_input = value
-
-"""TODO: 
-        @property
-    def time(self):
-        return self._time
-        
-    @time.setter
-    def time(self, value):
-        if isinstance(value, ContinuousSet):
-            self._time = weakref_ref(value)
-        elif value is None:
-            self._time = None
-        else:
-            raise TypeError("Invalid continous set passed.")
-
-    @property
-    def input_param(self):
-        return self._input_param
-    
-    @input_param.setter
-    def input_param(self, value):
-        self._input_param = []
-        #Convert to list if single object is passed
-        if not isinstance(value, list):
-            value = list(value)
-        elif value is None:
-            return
-        
-        for e in value:
-            if not isinstance(e, Parameter):
-                raise TypeError("Input parameter must be valid type")
-            elif not e._ismutable:
-                raise ValueError("Input parameter must be mutable")  
-            self._first_stage.append(weakref_ref(e))
-"""            
-
-#if len(list(m.component_data_objects(Block, active=True, descend_into=False))):
-#    raise Exception("The builder cannot use hierarchical models")
