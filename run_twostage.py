@@ -64,17 +64,27 @@ def create_model():
     m.var_input = pyo.Suffix(direction=pyo.Suffix.LOCAL)
     m.var_input[m.ca_in] = {0: 0}
 
+    rng = random.default_rng()
+    det = {'E1': 2.5E3, 'E2': 5E3, 'k1': 6.409E-2, 'k2': 9.938E3}
+    def stoch(rng, det):     
+        d = {}
+        for k,v in det.items():
+            d[k] = rng.normal(v, v/10)
+        return d    
+    stoch_var = StochFunc(stoch, det, rng, det)
+
     #Configure the scenario options
     m._pyds_opts = ScenarioOpts(
                                 [m.d, m.t, m.I], 
-                                {m.p: random.normal(0,1)},
-                                {m.cqa1: 1E3, m.cqa2: 1E2} , 
-                                m.var_input,)
+                                {m.p: stoch_var},
+                                {m.cqa1: 1E3, m.cqa2: 1E2}, 
+                                m.var_input)
     
     return m
 
 m = create_model()
-m2 = build_scenarios(m, 1000)
+builder = ModelBuilder(m)
+mod = builder.build(100)
 print()
 
 
