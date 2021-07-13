@@ -1,12 +1,13 @@
+import mpisppy
 import pyomo.environ as pyo
 from pyomo import dae
 from numpy import random
+from pyds.builder import get_bigM_form
+import mpisppy.scenario_tree as scenario_tree
+from mpisppy.utils.sputils import create_EF
 
-from pyds.model_builder import *
-
-def create_model():
+def scenario_creator(scenario_name):
     m = pyo.ConcreteModel()
-
     #Sets
     m.t = dae.ContinuousSet(bounds=(0,1)) #Normalised time
     m.I = pyo.Set(initialize=['A', 'B', 'C'])
@@ -32,17 +33,17 @@ def create_model():
     #Constraints
     R = 1
     def r_mb1(_m, t): 
-        return _m.dcdt['A',t]/_m.d['t_f'] == -2*_m.p['k1']*pyo.exp(-_m.p['E1']/(R*_m.d['T']))*_m.c['A',t]**2
+        return _m.dcdt['A',t]/_m.d['t_f'] == -2*_m.p['k1']*pyo.exp(-_m.p['E1']/(R*_m.d['T']))*_m.c['A',t]**2 + m.ca_in[t]
     def r_mb2(_m, t):
         return _m.dcdt['B',t]/_m.d['t_f'] == _m.p['k1']*pyo.exp(-_m.p['E1']/(R*_m.d['T']))*_m.c['A',t]**2 \
             - _m.p['k2']*pyo.exp(-_m.p['E2']/(R*_m.d['T']))*_m.c['B',t]
     def r_mb3(_m, t):
         return  _m.dcdt['C',t]/_m.d['t_f']  == _m.p['k2']*pyo.exp(-_m.p['E2']/(R*_m.d['T']))*_m.c['B',t]
-    
+
     m.mb1 = pyo.Constraint(m.t, rule=r_mb1)
     m.mb2 = pyo.Constraint(m.t, rule=r_mb2)
     m.mb3 = pyo.Constraint(m.t, rule=r_mb3)
-    
+
     m.g1 = pyo.Var(initialize=0)
     m.g2 = pyo.Var(initialize=0)
 
@@ -54,40 +55,45 @@ def create_model():
     m.c_g1 = pyo.Constraint(rule=r_cqa1)
     m.c_g2 = pyo.Constraint(rule=r_cqa2)
 
-    m.cqa1 = pyo.Constraint(expr=m.g1 <= 0)
-    m.cqa2 = pyo.Constraint(expr=m.g2 <= 0)
+    #CQA's
+    m.indicator_var = pyo.Var(bounds=(0,1))
+    m.bigM_constant = pyo.Param([1,2], initialize={1: 1, 2: 1E3})
+    m.cqa1 = get_bigM_form(pyo.Constraint(expr=m.g1<=0), m.indicator_var, m.bigM_constant[1])    
+    m.cqa2 = get_bigM_form(pyo.Constraint(expr=m.g2<=0), m.indicator_var, m.bigM_constant[2])  
 
     m.c['A',0].fix(2E3) #mol/L
     m.c['B',0].fix(0)
     m.c['C',0].fix(0)
 
-    m.var_input = pyo.Suffix(direction=pyo.Suffix.LOCAL)
-    m.var_input[m.ca_in] = {0: 0}
+    def r_obj(model):
+        return 1-model.indicator_var
+    m.obj = pyo.Objective(rule=r_obj, sense=pyo.maximize)
 
-    rng = random.default_rng()
-    det = {'E1': 2.5E3, 'E2': 5E3, 'k1': 6.409E-2, 'k2': 9.938E3}
-    def stoch(rng, det):     
-        d = {}
-        for k,v in det.items():
-            d[k] = rng.normal(v, v/10)
-            
-        return d    
-    stoch_var = StochFunc(stoch, det, rng, det)
+    #m.var_input = pyo.Suffix(direction=pyo.Suffix.LOCAL)
+    #m.var_input[m.ca_in] = {0: 0}
 
-    #Configure the scenario options
-    m._pyds_opts = ScenarioOpts(
-                                [m.d, m.t, m.I], 
-                                {m.p: stoch_var},
-                                {m.cqa1: 1E3, m.cqa2: 1E2}, 
-                                m.var_input)
-    
+    m._mpisppy_node_list = [
+        scenario_tree.ScenarioNode(
+            name='ROOT',
+            cond_prob=1.0, #must be float
+            stage=1,
+            scen_name_list=None,
+            cost_expression=None,
+            nonant_list= [m.ca_in],
+            scen_model=m
+        )
+    ]
     return m
+scen_count = 1000
+scenario_names = ['Scenario' + str(i) for i in range(scen_count)]
 
-m = create_model()
-builder = ModelBuilder(m)
-mod = builder.build(100)
+ef = create_EF(scenario_names, scenario_creator)
+discretizer = pyo.TransformationFactory('dae.collocation')
+discretizer.apply_to(ef, nfe=8, ncp=3)
+
+s = pyo.SolverFactory('baron')
+s.solve(ef)
+
 print()
-
-
     
 
