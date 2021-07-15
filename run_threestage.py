@@ -13,7 +13,7 @@ def scenario_creator(scenario_name):
     m.I = pyo.Set(initialize=['A', 'B', 'C'])
 
     #Parameters
-    m.d = pyo.Param(['T', 't_f'], initialize={'t_f': 280, 'T': 285}, mutable=True)
+    m.d = pyo.Param(['T', 't_f'], initialize={'t_f': 580, 'T': 285}, mutable=True)
     m.p = pyo.Param(['E1', 'E2', 'k1', 'k2'], initialize={'E1': 2.5E3, 'E2':5E3, 
                                                         'k1': 6.409E-2, 'k2': 9.938E3}, \
                                                         mutable=True)
@@ -24,7 +24,7 @@ def scenario_creator(scenario_name):
 
     m.u = pyo.Var(m.t, initialize=0)
     m.dudt = dae.DerivativeVar(m.u, initialize=0, wrt=m.t)
-    m.ca_in = pyo.Var(m.t, bounds=(0, 2.5)) #Defined in natural time, not normalised
+    m.ca_in = pyo.Var(m.t, bounds=(0, 0.001)) #Defined in natural time, not normalised
     m.u[0].fix(0)
     def r_ca(_m, t):
         return _m.ca_in[t]/_m.d['t_f'] == _m.dudt[t]
@@ -56,7 +56,7 @@ def scenario_creator(scenario_name):
     m.c_g2 = pyo.Constraint(rule=r_cqa2)
 
     #CQA's
-    m.indicator_var = pyo.Var(bounds=(0,1))
+    m.indicator_var = pyo.Var(bounds=(0,1), initialize=0)
     m.bigM_constant = pyo.Param([1,2], initialize={1: 1, 2: 1E3})
     m.cqa1 = get_bigM_form(pyo.Constraint(expr=m.g1<=0), m.indicator_var, m.bigM_constant[1])    
     m.cqa2 = get_bigM_form(pyo.Constraint(expr=m.g2<=0), m.indicator_var, m.bigM_constant[2])  
@@ -72,7 +72,20 @@ def scenario_creator(scenario_name):
     #m.var_input = pyo.Suffix(direction=pyo.Suffix.LOCAL)
     #m.var_input[m.ca_in] = {0: 0}
 
+    n_points=10
+    n_scenarios=500
+    branching_factors = [n_points, n_scenarios]
+
     m._mpisppy_node_list = [
+        scenario_tree.ScenarioNode(
+            name='ROOT',
+            cond_prob=1.0, #must be float
+            stage=1,
+            scen_name_list=None,
+            cost_expression=None,
+            nonant_list= [m.ca_in],
+            scen_model=m
+        ),
         scenario_tree.ScenarioNode(
             name='ROOT',
             cond_prob=1.0, #must be float
@@ -92,7 +105,7 @@ discretizer = pyo.TransformationFactory('dae.collocation')
 discretizer.apply_to(ef, nfe=8, ncp=3)
 
 s = pyo.SolverFactory('baron')
-s.solve(ef)
+s.solve(ef, tee=True)
 
 print()
     
