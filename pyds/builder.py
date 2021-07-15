@@ -1,6 +1,6 @@
 from pyomo.core.base import (Constraint, ConstraintList)
 
-def get_bigM_form(constraint, indicator_var, bigM_constant):
+def make_bigM_form(constraint, indicator_var, bigM_constant):
     """Obtain the big-M form of an (in)equality constraint.
 
     Args:
@@ -34,3 +34,39 @@ def get_bigM_form(constraint, indicator_var, bigM_constant):
         return lst
     else:
         return None
+
+def set_stochastic(param, func, *args, **kwargs):
+    if not param.mutable:
+        raise ValueError('Parameter is not mutable')
+    param._pyds_sampler = Sampler(param, func, *args, **kwargs)
+
+class Sampler:
+    def __init__(self, param, func, *args, **kwargs):
+        """Store a resampling function and its arguments.
+        TODO: Input error checking
+
+        Args:
+            param (pyo.Param): [description]
+            func (function)): Random samples generator function.
+                Must return a a single float or dict {key, float}
+            args, kwargs: Additional arguments passed to func, e.g. a stream of random numbers
+        """
+        self.func = func
+        self.param = param
+        self.args = args
+        self.kwargs = kwargs
+        
+    def resample_param(self):
+        """Resample and update the values of the stochastic parameter"""   
+        sample_value = self.__call__()
+        if isinstance(sample_value, dict):
+            for k,v in sample_value.items():
+                self.param[k].value = v
+        else:
+            self.param.value = sample_value
+
+    def __call__(self):
+        return self.func(*self.args, **self.kwargs)
+
+def is_stochastic(obj):
+    return hasattr(obj, "_pyds_stoch_sampler")
