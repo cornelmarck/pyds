@@ -8,3 +8,4 @@ def resample_all_stoch_params(model):
         else:
             continue
 
+def fix_binary_var()

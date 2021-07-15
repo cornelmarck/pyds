@@ -60,7 +60,7 @@ def scenario_creator(scenario_name):
         return _m.g2 == -(100*_m.c['B',1] - 20*_m.c['A',0] - 128*(_m.d['t_f'] + 30))/1E3
     m.c_g1 = pyo.Constraint(rule=r_cqa1)
     m.c_g2 = pyo.Constraint(rule=r_cqa2)
-    m.indicator_var = pyo.Var(bounds=(0,1), initialize=0)
+    m.indicator_var = pyo.Var(bounds=(0,1), initialize=0) #Binary indicator var
     m.bigM_constant = pyo.Param([1,2], initialize={1: 1, 2: 1E3})
     m.cqa1 = make_bigM_form(pyo.Constraint(expr=m.g1<=0), m.indicator_var, m.bigM_constant[1])    
     m.cqa2 = make_bigM_form(pyo.Constraint(expr=m.g2<=0), m.indicator_var, m.bigM_constant[2])  
@@ -86,13 +86,16 @@ def scenario_creator(scenario_name):
     ]
     return m
 
-scen_count = 100
+scen_count = 1000
 scenario_names = ['Scenario' + str(i) for i in range(scen_count)]
 
 ef = create_EF(scenario_names, scenario_creator)
 discretizer = pyo.TransformationFactory('dae.collocation')
 discretizer.apply_to(ef, nfe=8, ncp=3)
 resample_all_stoch_params(ef)
+
+
+
 
 s = pyo.SolverFactory('baron')
 s.solve(ef)
