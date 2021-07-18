@@ -91,13 +91,13 @@ def generate_nodes(m):
 scen_count = 10
 scenario_names = ['Scen' + str(i) for i in range(scen_count)]
 
-options={'solver': 'ipopt'}
+options={'solver': 'gams'}
 EF = StochModel(options, scenario_names, scenario_creator_callback, 
     scenario_creator_kwargs={'n_scenarios':scen_count, 'T': 280, 't_f':285})
 discretizer = pyo.TransformationFactory('dae.collocation')
 discretizer.apply_to(EF.ef, nfe=8, ncp=3)
 
-r = EF.solve(tee=True)
+r = EF.solve(solver_options={'solver': 'conopt'}, tee=True)
 print()
 
 
