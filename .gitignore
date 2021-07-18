@@ -1,2 +1,2 @@
-workspace.code-workspace
-.DS_Store
+*workspace.code-workspace
+*.DS_Store
