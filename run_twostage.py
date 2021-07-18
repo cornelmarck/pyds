@@ -1,3 +1,4 @@
+from pyds.solver import StochModel
 from mpisppy.opt.ef import ExtensiveForm
 from pyomo.core.base.expression import Expression
 import pyomo.environ as pyo
@@ -74,7 +75,6 @@ def scenario_creator_callback(scenario_name, n_scenarios, T, t_f):
     return m
 
 def generate_nodes(m):
-    
     m._mpisppy_node_list = [
         scenario_tree.ScenarioNode(
             name='ROOT',
@@ -92,10 +92,13 @@ scen_count = 10
 scenario_names = ['Scen' + str(i) for i in range(scen_count)]
 
 options={'solver': 'ipopt'}
-EF = ExtensiveForm(options, scenario_names, scenario_creator_callback, 
+EF = StochModel(options, scenario_names, scenario_creator_callback, 
     scenario_creator_kwargs={'n_scenarios':scen_count, 'T': 280, 't_f':285})
 discretizer = pyo.TransformationFactory('dae.collocation')
 discretizer.apply_to(EF.ef, nfe=8, ncp=3)
+
+r = EF.solve(tee=True)
+print()
 
 
 

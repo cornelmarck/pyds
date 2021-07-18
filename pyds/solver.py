@@ -8,23 +8,47 @@ class StochModel(ExtensiveForm):
         ExtensiveForm ([type]): [description]
     """
     def __init__(self, options, all_scenario_names, scenario_creator, scenario_creator_kwargs):
-        options.setdefault('solver':None)
         super().__init__(options, all_scenario_names, scenario_creator, scenario_creator_kwargs)
 
         return
 
-    def solve_extensive_form(self, solver_options, tee):
-        return super().solve_extensive_form(solver_options=solver_options, tee=tee)
+    def solve(self, resample=True, solver_options=None, tee=False):
+        self.resample_all_stoch_params()
+        self.reset_indicator_var()
+        self.relaxed_result = self.solve_extensive_form(solver_options, tee)
+        self.fix_indicator_var()
+        return self.solve_extensive_form(solver_options, tee)
+
 
     def resample_all_stoch_params(self):
         all_params = self.ef.component_objects(Param, descend_into=True)
         for p in all_params:
-            if hasattr(p, '_pyds_sampler'):
+            if hasattr(p, 'pyds_sampler'):
                 p.pyds_sampler.resample()
             else:
                 continue
 
-    def fix_binary_var(self):
-        return
+    def fix_indicator_var(self):
+        for scen in self.scenarios():
+            if hasattr(scen, 'pyds_indicator_var'):
+                var = scen.pyds_indicator_var
+                if var.value==0:
+                    var.fix(0)
+                else:
+                    var.fix(1)
+            else:
+                continue
+    
+    def reset_indicator_var(self):
+        for scen in self.scenarios():
+            if hasattr(scen, 'pyds_indicator_var'):
+                var = scen.pyds_indicator_var
+                var.unfix()
+                var.setvalue(0)
+            else:
+                continue
+            
+
+
 
 
