@@ -2,8 +2,8 @@ Pyomo package for probabilistic design space characterisation.
 
 Installation instructions:
 1. Install prerequisites \
-    conda install numpy pyomo openmpi mpi4py \
-    pip install mpi-sppy 
+    conda install numpy pyomo
+    pip install deus
 
 2. Build the package source \
     python setup.py sdist
