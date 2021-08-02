@@ -59,9 +59,10 @@ def scenario_creator_callback(scenario_name, n_scenarios, T, t_f):
     m.c_g2 = pyo.Constraint(rule=r_cqa2)
 
     m.pyds_indicator_var = pyo.Var(bounds=(0,1), initialize=0) #Binary indicator var
-    m.bigM_constant = pyo.Param([1,2], initialize={1: 1, 2: 1E3})
+    m.bigM_constant = pyo.Param([1,2], initialize={1: 1E3, 2: 1E5})
     m.cqa1 = BigMConstraint(m.pyds_indicator_var, m.bigM_constant[1], expr=m.g1<=0)  
     m.cqa2 = BigMConstraint(m.pyds_indicator_var, m.bigM_constant[2], expr=m.g2<=0)
+    
     def r_obj(model):
         return 1-model.pyds_indicator_var
     m.obj = pyo.Objective(rule=r_obj, sense=pyo.maximize)
@@ -87,8 +88,7 @@ def generate_nodes(m):
         )
     ]
 
-
-scen_count = 10
+scen_count = 100
 scenario_names = ['Scen' + str(i) for i in range(scen_count)]
 
 options={'solver': 'gams'}
@@ -97,7 +97,7 @@ EF = StochModel(options, scenario_names, scenario_creator_callback,
 discretizer = pyo.TransformationFactory('dae.collocation')
 discretizer.apply_to(EF.ef, nfe=8, ncp=3)
 
-r = EF.solve(solver_options={'solver': 'conopt'}, tee=True)
+r = EF.solve(solver_options={'solver': 'conopt', 'warmstart':True}, tee=True)
 print()
 
 
