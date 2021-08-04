@@ -1,4 +1,3 @@
-from mpisppy.utils.sputils import create_EF
 from pyomo.core.base import (ConcreteModel, Block, RangeSet, Constraint, ConstraintList, Param, Var)
 from pyomo.core.base.objective import Objective, maximize
 from itertools import product
@@ -40,78 +39,80 @@ def add_BigMConstraint(model, name, bigM_constant, *args, **kwargs):
         cstr = lst
     else:
         cstr =  None
-    
+
     model.add_component(name, cstr)
     
-def create_objective(m):
+def _create_objective(m):
     def obj_rule(m):
         n_scenarios = prod(m.BFs)
-        all_idx = product(*[range(1, i+1) for i in m.BFs])
-        return 1/(n_scenarios)*sum(get_scenario(m, idx)._indicator_var for idx in all_idx)
+        all_idx = product(*[range(i) for i in m.BFs])
+        return 1/(n_scenarios)*sum(1-get_scenario(m, idx)._indicator_var for idx in all_idx)
 
     m.obj = Objective(rule=obj_rule, sense=maximize)
 
-def get_scenario(m, idx):
-    """Get the scenario relocating with idx which is 1-based.
+def get_final_scenarios(m):
+    final_stage = m.n_stages - 1
+    return [v for v in scenarios_at_stage(m, final_stage)]
 
+def scenarios_at_stage(m, stage):
+    """Get an interator which gives index, scenario 
+
+    Args:
+        m (ConcreteModel): The multi-stage model
+        stage (int): target stage
+    """
+    if stage==0:
+        return [m]
+
+    BFs = m.BFs[0:stage+1]
+    all_idx = product(*[range(i) for i in BFs])
+    return [get_scenario(m, i) for i in all_idx]
+
+def get_scenario(m, idx):
+    """Get a single scenario by idx
     Args:
         m (ConcreteModel): Pyomo model
         idx (list or tuple of int): scenario index
     """
-    if not isinstance(idx, (list, tuple)):
-        idx = [idx]
-
     def recursive(obj, stage, idx):
-        if not stage < len(idx):
+        obj = obj.__getattribute__('Substage')[idx[stage-1]]
+        if stage == len(idx):
             return obj
-        obj = obj.__getattribute__('Stage'+str(stage+1))[idx[stage]]
-        return recursive(obj, stage+1, idx)
-    return recursive(m, 0, idx)    
+        else:
+            return recursive(obj, stage+1, idx)
+    return recursive(m, 1, idx)    
         
-def create_flattened_model(stage_rules):
-    m= ConcreteModel()
-    for r in stage_rules:
-        r(m, None)
-    return m
-
 def create_EF(stage_rules, BFs):
     ef = ConcreteModel()
     ef.n_stages = len(BFs)+1
     ef.BFs = BFs
     stages_dict = {}
 
+    if ef.n_stages == 1:
+        ValueError('Multistage model must contain more than one stage')
+
     def recursive_block_rule(m, stage, n_stages, BFs, stages_dict):
         stage_rules[stage](m, stages_dict)
-        if not stage < n_stages-1: #Check whether last stage has been reached
+        if stage == n_stages-1: #Check whether last stage has been reached
             return
         stages_dict[stage] = m
-        m.add_component('Stage_idx', RangeSet(BFs[stage]))
-        m.add_component('Stage'+str(stage+1), Block(m.Stage_idx, 
+        m.add_component('Substage_idx', RangeSet(0, BFs[stage]-1))
+        m.add_component('Substage', Block(m.Substage_idx, 
             rule= lambda m: recursive_block_rule(m, stage+1, n_stages, BFs, stages_dict)))
 
     recursive_block_rule(ef, 0, ef.n_stages, ef.BFs, stages_dict)
-    create_objective(ef)
+    _create_objective(ef)
     return ef
 
-def create_multistage_model_no_branches(scenario_creator):
-    """Create multistage model without branches. Is used as a template model for model construction.
-
-    Args:
-        scenario_creator ([type]): [description]
-        scenario_creator_kwargs ([type]): [description]
-    """
-    tmp = scenario_creator()
-    if not hasattr(tmp, '_pyds_stages'):
-        raise Exception('No _pyds_stages dict is found')
-    stages_dict = tmp._pyds_stages
-
-    model = ConcreteModel()
-
-    return    
-
 def initialize_empty_substages(root, n_stages):
+    #TODO
     pass
     
+def create_flattened_model(stage_rules):
+    #TODO
+    pass
+
+
 
 
 
@@ -134,71 +135,3 @@ def initialize_empty_substages(root, n_stages):
 
 
 
-# OLD FUNCTIONS. DEUS INTERFACE WILL SET THE STOCHASTIC PARAMETERS EXTERNALLY
-# class StochModel():
-#     """Create the multi-stage stochastic model and associated solver functions.
-#     This is a modified mpispy ExtensiveForm object in order to not require an MPI installation.
-
-#     The scenario_creator function must return a pyomo model with the following objects defined at the root.
-#         1. _mpisppy_node_list (list): The ScenarioNodes containting e.g. nonanticipative variables
-#         2. _mpisppy_probability (float): The probability of a given scenario (1/n_scenarios) for two-stage model.
-#         3. StochParam and inequality constraint objects. 
-    
-#         Do not create hierarchical models (i.e. Pyomo Blocks) in the scenario_creator.
-
-#     Args:
-#         ExtensiveForm ([type]): [description]
-#     """
-#     def __init__(self, options, all_scenario_names, scenario_creator, scenario_creator_kwargs):
-#         self.options = options
-#         self.all_scenario_names = all_scenario_names
-#         self.scenario_creator = scenario_creator
-
-#         self.t = 1
-        
-#         if "branching_factors" in self.options:
-#             self.branching_factors = self.options["branching_factors"]
-#         else:
-#             self.branching_factors = [len(self.all_scenario_names)]
-
-#         return
-# def StochParam(sampling_func, *sampling_func_args, **param_kwargs):
-#     param_kwargs.setdefault('mutable', True)
-#     param_kwargs.setdefault('initialize', 0)
-#     param = Param(**param_kwargs)
-#     param.pyds_sampler = Sampler(param, sampling_func, *sampling_func_args)
-#     return param
-
-# class Sampler:
-#     def __init__(self, param, func, *args, **kwargs):
-#         """Store a resampling function and its arguments.
-#         TODO: Input error checking
-
-#         Args:
-#             param (pyo.Param): Parent of sampler object
-#             func (function)): Random samples generator function.
-#                 Must return a a single float or dict {key, float}
-#             args, kwargs: Additional arguments passed to func, e.g. a stream of random numbers
-#         """
-#         self.func = func
-#         self.param = param
-#         self.args = args
-#         self.kwargs = kwargs
-        
-#     def resample(self):
-#         """Resample and update the values of the stochastic parameter"""   
-#         sample_value = self.__call__()
-#         if isinstance(sample_value, dict):
-#             for k,v in sample_value.items():
-#                 self.param[k].value = v
-#         else:
-#             self.param.value = sample_value
-
-#     def __call__(self):
-#         return self.func(*self.args, **self.kwargs)
-
-# def is_stochastic(obj):
-#     return hasattr(obj, "pyds_stoch_sampler")
-
-# def is_ineq_constraint(obj):
-#     return hasattr(obj, "pyds_ineq_constraint")
