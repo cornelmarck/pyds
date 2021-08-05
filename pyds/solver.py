@@ -10,10 +10,14 @@ class Manager():
         self.n_stages = len(stage_rules)
         self.input_bindings = input_bindings
         self.model_transformation = model_transformation
+        self.model = None
 
         self.solver = SolverFactory(solver_name)
         self.solver_options = solver_options
-        self.model = None
+        self.solver_options.setdefault('solver', 'conopt')
+        self.solver_options.setdefault('tee', False)
+        self.solver_options.setdefault('warmstart', True)
+
 
     def g(self, d, p):
         pass
@@ -33,11 +37,11 @@ class Manager():
                 for scen_idx, scen in enumerate(scenarios_at_stage(self.model, stage)): #Scenario
                     scen.component(local_param_name).set_value(values[scen_idx, param_idx])                             
 
-    def solve(self, tee=False):
+    def solve(self):
         self._reset_indicator_var()
-        self.relaxed_result = self.solver.solve(self.solver_options, tee)
+        self.relaxed_result = self.solver.solve(self.model, **self.solver_options)
         self._fix_indicator_var()
-        return self.solver.solve(self.solver_options, tee)
+        return self.solver.solve(self.model, **self.solver_options)
 
     def _get_indicator_var_values(self):
         final_scenarios = get_final_scenarios(self.model)
@@ -65,7 +69,7 @@ class Manager():
             if hasattr(scen, '_indicator_var'):
                 var = scen._indicator_var
                 var.unfix()
-                var.setvalue(0)
+                var.set_value(0)
             else:
                 continue
 

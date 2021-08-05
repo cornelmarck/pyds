@@ -53,13 +53,13 @@ def stage1_rule(m, stage):
     m.g1 = pyo.Var(initialize=0)
     m.g2 = pyo.Var(initialize=0)
     def r_cqa1(_m):
-        return _m.g1 == 1000*(0.8 -(_m.c['B',1] + 1E-2)/(_m.c['A', 1]+_m.c['B',1]+_m.c['C',1]+ 1E-2))
+        return _m.g1 == (0.8 -(_m.c['B',1] + 1E-2)/(_m.c['A', 1]+_m.c['B',1]+_m.c['C',1]+ 1E-2))
     def r_cqa2(_m):
-        return _m.g2 == -(100*_m.c['B',1] - 20*_m.c['A',0] - 128*(t_f + 30))/1E3
+        return _m.g2 == -(100*_m.c['B',1] - 20*_m.c['A',0] - 128*(t_f + 30))
     m.c_g1 = pyo.Constraint(rule=r_cqa1)
     m.c_g2 = pyo.Constraint(rule=r_cqa2)
 
-    m.bigM_constant = pyo.Param([1,2], initialize={1: 1E3, 2: 1E5})
+    m.bigM_constant = pyo.Param([1,2], initialize={1: 100, 2: 1E7})
     add_BigMConstraint(m, 'cqa1', m.bigM_constant[1], expr=m.g1<=0)  
     add_BigMConstraint(m, 'cqa2', m.bigM_constant[2], expr=m.g2<=0)
     m.c['A',0].fix(2E3) #mol/L
@@ -76,13 +76,12 @@ m = TwoStageManager(stage_rules=[stage0_rule, stage1_rule],
     model_transformation=apply_collocation,
     solver_options={'solver': 'conopt'})
 
-n = 100
-d = np.random.rand(n, 2)
-p = np.ones((n, 4))
-r = m.g(d,p)
+# n = 100
+# d = np.random.rand(n, 2)
+# p = np.ones((n, 4))
+# r = m.g(d,p)
 
 print()
-
 
 
 
