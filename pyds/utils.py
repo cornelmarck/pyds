@@ -104,14 +104,63 @@ def create_EF(stage_rules, BFs):
     _create_objective(ef)
     return ef
 
-def initialize_empty_substages(root, n_stages):
-    #TODO
-    pass
-    
-def create_flattened_model(stage_rules):
-    #TODO
-    pass
+def raw_ouput_writer(m):
+    """Return a dict which contains the values of all variables, objectives and parameters. 
 
+    Args:
+        m (Pyomo model): [description]
+
+    Returns:
+        [dict]: [description]
+    """
+    output = {}
+    for i in m.component_data_objects(Var, active=True):
+        output[i.name] = i.value
+
+    for i in m.component_data_objects(Objective, active=True):
+        output[i.name] = i.expr()
+
+    for i in m.component_objects(Param):
+        if i.is_indexed():
+            for k, v in i.items():
+                name = '{}[{}]'.format(i.name, k)
+                output[name] = v
+        else:
+            output[i.name] = i.value    
+     
+    return output
+
+def output_writer(m):
+    """Return a dict which contains the values of all variables, objectives and parameters. 
+
+    Args:
+        m ([type]): [description]
+
+    Returns:
+        [type]: [description]
+    """
+    output = {}
+    for i in m.component_objects(Var, active=True):
+        if i.is_indexed():
+            var = {}
+            for k in i.keys():
+                var[k] = i[k].value
+            output[i.name] = var
+        else:
+            output[i.name] = i.value
+
+    for i in m.component_objects(Objective, active=True):
+        output[i.name] = i.expr()
+
+    for i in m.component_objects(Param):
+        if i.is_indexed():
+            for k, v in i.items():
+                name = '{}[{}]'.format(i.name, k)
+                output[name] = v
+        else:
+            output[i.name] = i.value  
+
+    return output
 
 
 

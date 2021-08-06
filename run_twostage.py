@@ -1,16 +1,14 @@
-from pyds.buildutils import *
+from pyds.utils import *
 from pyds.solver import *
 import pyomo.environ as pyo
 from pyomo import dae
 from numpy import random
 import numpy as np
 
-from pyds.buildutils import add_BigMConstraint
 randomstream = random.default_rng()
 
 def stage0_rule(m, stage=None):
     m.t = dae.ContinuousSet(bounds=(0,1)) #Normalised time
-    m.ca_in = pyo.Var(m.t, initialize=0, bounds=(0, 0.001))
     m.T = pyo.Param(initialize=0, mutable=True)
     m.t_f = pyo.Param(initialize=0, mutable=True)
 
@@ -29,18 +27,11 @@ def stage1_rule(m, stage):
     #Variables
     m.c = pyo.Var(m.I, t, bounds=(0, 1E8), initialize=0)
     m.dcdt = dae.DerivativeVar(m.c, wrt=t)
-    m.u = pyo.Var(t, initialize=0)
-    m.dudt = dae.DerivativeVar(m.u, initialize=0, wrt=t)
-     #Defined in natural time, not normalised
-    m.u[0].fix(0)
-    def r_ca(_m, t):
-        return stage[0].ca_in[t]/t_f == _m.dudt[t]
-    m.c_ca = pyo.Constraint(t, rule=r_ca)
 
     #Constraints
     R = 1
     def r_mb1(_m, t): 
-        return _m.dcdt['A',t]/t_f == -2*_m.k1*pyo.exp(-_m.E1/(R*T))*_m.c['A',t]**2 + stage[0].ca_in[t]
+        return _m.dcdt['A',t]/t_f == -2*_m.k1*pyo.exp(-_m.E1/(R*T))*_m.c['A',t]**2
     def r_mb2(_m, t):
         return _m.dcdt['B',t]/t_f == _m.k1*pyo.exp(-_m.E1/(R*T))*_m.c['A',t]**2 \
             - _m.k2*pyo.exp(-_m.E2/(R*T))*_m.c['B',t]
@@ -59,7 +50,7 @@ def stage1_rule(m, stage):
     m.c_g1 = pyo.Constraint(rule=r_cqa1)
     m.c_g2 = pyo.Constraint(rule=r_cqa2)
 
-    m.bigM_constant = pyo.Param([1,2], initialize={1: 100, 2: 1E7})
+    m.bigM_constant = pyo.Param([1,2], initialize={1: 1E2, 2: 1E5})
     add_BigMConstraint(m, 'cqa1', m.bigM_constant[1], expr=m.g1<=0)  
     add_BigMConstraint(m, 'cqa2', m.bigM_constant[2], expr=m.g2<=0)
     m.c['A',0].fix(2E3) #mol/L
@@ -72,15 +63,16 @@ def apply_collocation(m):
 
 m = TwoStageManager(stage_rules=[stage0_rule, stage1_rule], 
     input={'d': [(0, 't_f'), (0, 'T')], 'p': [(1, 'E1'), (1, 'E2'), (1, 'k1'), (1, 'k2')]},
-    solver_name='gams',
+    solver_name='ipopt',
     model_transformation=apply_collocation,
-    solver_options={'solver': 'conopt'})
+    solver_options={})
 
-# n = 100
-# d = np.random.rand(n, 2)
-# p = np.ones((n, 4))
-# r = m.g(d,p)
+n = 10
+d = np.random.rand(n, 2)
+p = np.ones((n, 4))
+m._build_model(4)
 
+m.write_output_to_disk
 print()
 
 
