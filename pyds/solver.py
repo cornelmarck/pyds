@@ -1,57 +1,39 @@
 from pyomo.core.base import param
-from pyds.buildutils import (create_EF, scenarios_at_stage, get_scenario, get_final_scenarios)
+from pyds.utils import (create_EF, scenarios_at_stage, get_final_scenarios, raw_ouput_writer)
 from pyomo.opt import SolverFactory
 import numpy
+import pickle
+import os
 
+class GamsSolver():
+    def __init__(self, parent, io_options=None):
+        self.parent = parent
+        self.model = parent.model
+        self.solver_obj = SolverFactory('gams')
 
-class Manager():
-    def __init__(self, stage_rules, input_bindings, solver_name, model_transformation=None, solver_options=None):
-        self.stage_rules = stage_rules
-        self.n_stages = len(stage_rules)
-        self.input_bindings = input_bindings
-        self.model_transformation = model_transformation
-        self.model = None
-
-        self.solver = SolverFactory(solver_name)
-        self.solver_options = solver_options
-        self.solver_options.setdefault('solver', 'conopt')
-        self.solver_options.setdefault('tee', False)
-        self.solver_options.setdefault('warmstart', True)
-
-
-    def g(self, d, p):
-        pass
-
-    def update_input(self, input_values):
-        """Set the input parameters at a stage input_values.
-        Args:
-            input_values (dict of tuple, list): keys are tuple (stage_id, parameter_name), values are 2d array of 
-        """
-        for input_key, values in input_values.items():
-            if not input_key in self.input_bindings:
-                raise ValueError('Undefined input binding: ' + str(input_key))
-                
-            for param_idx, param_key in enumerate(self.input_bindings[input_key]):
-                stage = param_key[0]
-                local_param_name = param_key[1]
-                for scen_idx, scen in enumerate(scenarios_at_stage(self.model, stage)): #Scenario
-                    scen.component(local_param_name).set_value(values[scen_idx, param_idx])                             
+        self.options = io_options
+        self.options.setdefault('solver', 'conopt')
+        self.options.setdefault('tee', False)
+        self.options.setdefault('warmstart', True)
+        
 
     def solve(self):
+        self.output = {}
+
         self._reset_indicator_var()
         self.relaxed_result = self.solver.solve(self.model, **self.solver_options)
-        self._fix_indicator_var()
-        return self.solver.solve(self.model, **self.solver_options)
-
-    def _get_indicator_var_values(self):
-        final_scenarios = get_final_scenarios(self.model)
-        vars = numpy.empty(len(final_scenarios))
+        self.output['relaxation'] = {'solver_result': self.relaxed_result, 
+                'model_data': raw_ouput_writer(self.model),
+                'indicator_vars': self._get_indicator_var_values()}
         
-        for id, scen in enumerate(final_scenarios):
-             if hasattr(scen, '_indicator_var'):
-                 vars[id] = scen._indicator_var.value
-        return vars
+        #Solve model
+        self._fix_indicator_var()
+        self.solution_result = self.solver.solve(self.model, **self.solver_options)
+        self.output['solution'] = {'solver_result': self.solution_result, 
+                'model_data': raw_ouput_writer(self.model),
+                'indicator_vars': self._get_indicator_var_values()}
 
+        self.output['input_values'] = self.parent.input_values
 
     def _fix_indicator_var(self):
         for scen in get_final_scenarios(self.model):
@@ -72,33 +54,15 @@ class Manager():
                 var.set_value(0)
             else:
                 continue
-
-class TwoStageManager(Manager):
-    def __init__(self, stage_rules, input, solver_name, model_transformation=None, solver_options=None):
-        super().__init__(stage_rules, input, solver_name, model_transformation, solver_options)
-
-    def g(self, d, p):
-        n_p = numpy.shape(p)[0]
-        if self.model is None or self.model.BFs[0] != n_p:
-            self._build_model(n_p)
-
-        g_list = []
-        #Iterate the design poi]\nts d
-        for i, d_point in enumerate(d):
-            g_mat = numpy.empty((n_p, 1))
-            self.update_input({'d': numpy.array([d_point]), 'p': p})
-            self.solve()
-            g_mat[:, 0] = self._get_indicator_var_values()
-            g_list.append(g_mat)
-        return g_list
+    
+    def _get_indicator_var_values(self):
+        final_scenarios = get_final_scenarios(self.model)
+        vars = numpy.empty(len(final_scenarios))
+        
+        for id, scen in enumerate(final_scenarios):
+             if hasattr(scen, '_indicator_var'):
+                 vars[id] = scen._indicator_var.value
+        return vars
 
 
-    def _build_model(self, n_p):
-        self.model = create_EF(self.stage_rules, [n_p])
-        self.model_transformation(self.model) 
-
-class ThreeStageManager(Manager):
-    def __init__(self, stage_rules, input, solver_name, model_transformation=None, solver_options=None):
-        super().__init__(stage_rules, input, solver_name, model_transformation, solver_options)
-
-
+    
