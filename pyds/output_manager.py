@@ -10,13 +10,17 @@ class OutputManager:
         if exists(self.output_path_fnx):
             remove(self.output_path_fnx)
         
-        self.output = {
-            'runs': {}
-        }
+        self.output = []
 
     def add_run_to_output(self, data):
-        self.output['runs'].extend(data)
+        self.output.append(data.copy())
 
-    def write_output_to_file(self):
+    def write_output_to_disk(self):
         with open(self.output_path_fnx, 'wb') as f:
-            pickle.dump(self.output)
+            pickle.dump(self.output, f)
+
+    def write_directly(self, data):
+         with open(self.output_path_fnx, 'ab') as f:
+            pickle.dump(data, f)
+
+

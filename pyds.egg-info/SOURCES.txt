@@ -1,0 +1,11 @@
+README.md
+setup.py
+pyds/__init__.py
+pyds/output_manager.py
+pyds/run.py
+pyds/solver.py
+pyds/utils.py
+pyds.egg-info/PKG-INFO
+pyds.egg-info/SOURCES.txt
+pyds.egg-info/dependency_links.txt
+pyds.egg-info/top_level.txt

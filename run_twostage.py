@@ -1,5 +1,5 @@
 from pyds.utils import *
-from pyds.solver import *
+from pyds.run import *
 import pyomo.environ as pyo
 from pyomo import dae
 from numpy import random
@@ -9,8 +9,8 @@ randomstream = random.default_rng()
 
 def stage0_rule(m, stage=None):
     m.t = dae.ContinuousSet(bounds=(0,1)) #Normalised time
-    m.T = pyo.Param(initialize=0, mutable=True)
-    m.t_f = pyo.Param(initialize=0, mutable=True)
+    m.T = pyo.Param(initialize=280, mutable=True)
+    m.t_f = pyo.Param(initialize=280, mutable=True)
 
 def stage1_rule(m, stage):
     t = stage[0].t
@@ -19,10 +19,10 @@ def stage1_rule(m, stage):
     m.I = pyo.Set(initialize=['A', 'B', 'C'])
     #Parameters
     
-    m.E1 = pyo.Param(mutable=True, initialize=0)
-    m.E2 = pyo.Param(mutable=True, initialize=0) 
-    m.k1 = pyo.Param(mutable=True, initialize=0)
-    m.k2 = pyo.Param(mutable=True, initialize=0) 
+    m.E1 = pyo.Param(mutable=True, initialize=2.5E3)
+    m.E2 = pyo.Param(mutable=True, initialize=5E3) 
+    m.k1 = pyo.Param(mutable=True, initialize=6.04E-2)
+    m.k2 = pyo.Param(mutable=True, initialize=9.93E3) 
 
     #Variables
     m.c = pyo.Var(m.I, t, bounds=(0, 1E8), initialize=0)
@@ -34,7 +34,7 @@ def stage1_rule(m, stage):
         return _m.dcdt['A',t]/t_f == -2*_m.k1*pyo.exp(-_m.E1/(R*T))*_m.c['A',t]**2
     def r_mb2(_m, t):
         return _m.dcdt['B',t]/t_f == _m.k1*pyo.exp(-_m.E1/(R*T))*_m.c['A',t]**2 \
-            - _m.k2*pyo.exp(-_m.E2/(R*T))*_m.c['B',t]
+            -1*_m.k2*pyo.exp(-_m.E2/(R*T))*_m.c['B',t]
     def r_mb3(_m, t):
         return  _m.dcdt['C',t]/t_f  == _m.k2*pyo.exp(-_m.E2/(R*T))*_m.c['B',t]
     m.mb1 = pyo.Constraint(t, rule=r_mb1)
@@ -46,7 +46,7 @@ def stage1_rule(m, stage):
     def r_cqa1(_m):
         return _m.g1 == (0.8 -(_m.c['B',1] + 1E-2)/(_m.c['A', 1]+_m.c['B',1]+_m.c['C',1]+ 1E-2))
     def r_cqa2(_m):
-        return _m.g2 == -(100*_m.c['B',1] - 20*_m.c['A',0] - 128*(t_f + 30))
+        return _m.g2 == -1*(100*_m.c['B',1] - 20*_m.c['A',0] - 128*(t_f + 30))
     m.c_g1 = pyo.Constraint(rule=r_cqa1)
     m.c_g2 = pyo.Constraint(rule=r_cqa2)
 
@@ -61,18 +61,24 @@ def apply_collocation(m):
     discretizer = pyo.TransformationFactory('dae.collocation')
     discretizer.apply_to(m, nfe=8, ncp=3)
 
-m = TwoStageManager(stage_rules=[stage0_rule, stage1_rule], 
-    input={'d': [(0, 't_f'), (0, 'T')], 'p': [(1, 'E1'), (1, 'E2'), (1, 'k1'), (1, 'k2')]},
-    solver_name='ipopt',
-    model_transformation=apply_collocation,
-    solver_options={})
+f = create_flattened_model([stage0_rule, stage1_rule])
 
-n = 10
-d = np.random.rand(n, 2)
-p = np.ones((n, 4))
-m._build_model(4)
 
-m.write_output_to_disk
+m = TwoStageManager([stage0_rule, stage1_rule], 
+    {'d': [(0, 't_f'), (0, 'T')], 'p': [(1, 'E1'), (1, 'E2'), (1, 'k1'), (1, 'k2')]},
+    model_transformation=apply_collocation)
+
+n_samples = 1
+ran = random.default_rng()
+E1 = ran.normal(2.5E3, 2.5E1, size=n_samples)
+E2 = ran.normal(5E3, 5E1, size=n_samples)
+k1 = ran.normal(6.409E-2, 6.409E-4, size=n_samples)
+k2 = ran.normal(9.938E3, 9.938E1, size=n_samples)
+
+d = np.array([[280, 290]])
+p = np.array([[E1[i], E2[i], k1[i], k2[i]] for i in range(n_samples)])
+m.g(d, p)
+
 print()
 
 

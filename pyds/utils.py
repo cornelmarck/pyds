@@ -74,6 +74,8 @@ def get_scenario(m, idx):
         m (ConcreteModel): Pyomo model
         idx (list or tuple of int): scenario index
     """
+    if isinstance(idx, int):
+        idx = (idx,)
     def recursive(obj, stage, idx):
         obj = obj.__getattribute__('Substage')[idx[stage-1]]
         if stage == len(idx):
@@ -104,6 +106,14 @@ def create_EF(stage_rules, BFs):
     _create_objective(ef)
     return ef
 
+def create_flattened_model(stage_rules):
+    m = ConcreteModel()
+
+    dummy_parent_models = [m]*(len(stage_rules)-1)
+    for i in stage_rules:
+        i(m, dummy_parent_models)
+    return m          
+
 def raw_ouput_writer(m):
     """Return a dict which contains the values of all variables, objectives and parameters. 
 
@@ -130,37 +140,38 @@ def raw_ouput_writer(m):
      
     return output
 
-def output_writer(m):
-    """Return a dict which contains the values of all variables, objectives and parameters. 
 
-    Args:
-        m ([type]): [description]
+# def output_writer(m):
+#     """Return a dict which contains the values of all variables, objectives and parameters. 
 
-    Returns:
-        [type]: [description]
-    """
-    output = {}
-    for i in m.component_objects(Var, active=True):
-        if i.is_indexed():
-            var = {}
-            for k in i.keys():
-                var[k] = i[k].value
-            output[i.name] = var
-        else:
-            output[i.name] = i.value
+#     Args:
+#         m ([type]): [description]
 
-    for i in m.component_objects(Objective, active=True):
-        output[i.name] = i.expr()
+#     Returns:
+#         [type]: [description]
+#     """
+#     output = {}
+#     for i in m.component_objects(Var, active=True):
+#         if i.is_indexed():
+#             var = {}
+#             for k in i.keys():
+#                 var[k] = i[k].value
+#             output[i.name] = var
+#         else:
+#             output[i.name] = i.value
 
-    for i in m.component_objects(Param):
-        if i.is_indexed():
-            for k, v in i.items():
-                name = '{}[{}]'.format(i.name, k)
-                output[name] = v
-        else:
-            output[i.name] = i.value  
+#     for i in m.component_objects(Objective, active=True):
+#         output[i.name] = i.expr()
 
-    return output
+#     for i in m.component_objects(Param):
+#         if i.is_indexed():
+#             for k, v in i.items():
+#                 name = '{}[{}]'.format(i.name, k)
+#                 output[name] = v
+#         else:
+#             output[i.name] = i.value  
+
+#     return output
 
 
 
