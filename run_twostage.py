@@ -61,11 +61,8 @@ def apply_collocation(m):
     discretizer = pyo.TransformationFactory('dae.collocation')
     discretizer.apply_to(m, nfe=8, ncp=3)
 
-f = create_flattened_model([stage0_rule, stage1_rule])
-
-
 m = TwoStageManager([stage0_rule, stage1_rule], 
-    {'d': [(0, 't_f'), (0, 'T')], 'p': [(1, 'E1'), (1, 'E2'), (1, 'k1'), (1, 'k2')]},
+    {0: ['t_f', 'T'], 1: ['E1', 'E2', 'k1', 'k2']},
     model_transformation=apply_collocation)
 
 n_samples = 1

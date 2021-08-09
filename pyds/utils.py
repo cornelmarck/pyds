@@ -45,14 +45,24 @@ def add_BigMConstraint(model, name, bigM_constant, *args, **kwargs):
 def _create_objective(m):
     def obj_rule(m):
         n_scenarios = prod(m.BFs)
-        all_idx = product(*[range(i) for i in m.BFs])
-        return 1/(n_scenarios)*sum(1-get_scenario(m, idx)._indicator_var for idx in all_idx)
+        return 1/(n_scenarios)*sum(1-get_scenario(m, idx)._indicator_var for idx in get_all_idx(m.BFs))
 
     m.obj = Objective(rule=obj_rule, sense=maximize)
 
 def get_final_scenarios(m):
     final_stage = m.n_stages - 1
     return [v for v in scenarios_at_stage(m, final_stage)]
+
+def get_all_idx(BFs):
+    """Generate all index combinations belonging to branching factors
+
+    Args:
+        BFs ([type]): [description]
+
+    Returns:
+        [type]: [description]
+    """
+    return product(*[range(i) for i in BFs])
 
 def scenarios_at_stage(m, stage):
     """Get an interator which gives index, scenario 
@@ -65,8 +75,7 @@ def scenarios_at_stage(m, stage):
         return [m]
 
     BFs = m.BFs[0:stage+1]
-    all_idx = product(*[range(i) for i in BFs])
-    return [get_scenario(m, i) for i in all_idx]
+    return [get_scenario(m, i) for i in get_all_idx(BFs)]
 
 def get_scenario(m, idx):
     """Get a single scenario by idx

@@ -7,13 +7,13 @@ import os
 
 class GamsSolver():
     def __init__(self, parent, solve_trajectories=True,
-                save_solution_states=False, **io_options):
+                save_solution_states=False, warn_infeasible=True, **io_options):
         self.parent = parent
-        #self.solver_obj = SolverFactory('gams')
+        self.solver_obj = SolverFactory('gams')
 
         self.save_solution_states = save_solution_states
         self.solve_trajectories = solve_trajectories
-        self.warn_infeasible = True
+        self.warn_infeasible = warn_infeasible
         self.no_infeasible = 0
 
         self.options = io_options
@@ -29,7 +29,7 @@ class GamsSolver():
 
         #http://www.pyomo.org/blog/2015/1/8/accessing-solver
         self._solve_relaxation()
-        if self.relaxed_result.termination_condition == TerminationCondition.infeasible:
+        if self.relaxed_result['Solver'].termination_condition == TerminationCondition.infeasible:
             self._set_indicator_var_infeasible()
             if self.warn_infeasible: 
                 print('Warning: Infeasible relaxation solution')
@@ -38,9 +38,6 @@ class GamsSolver():
 
         if self.solve_trajectories:
             self._solve_trajectories()
-
-    def _simulate_intial_state():
-        pass
 
     def _solve_relaxation(self):
         self._reset_indicator_var()
