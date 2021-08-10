@@ -27,7 +27,7 @@ class Solver():
         #http://www.pyomo.org/blog/2015/1/8/accessing-solver
         self._solve_relaxation()
         if self.relaxed_result['Solver'].termination_condition == TerminationCondition.infeasible:
-            self._set_indicator_var_infeasible()
+            self._set_infeasible_indicator_var()
             if self.warn_infeasible: 
                 print('Warning: Infeasible relaxation solution')
             self.no_infeasible += 1 
