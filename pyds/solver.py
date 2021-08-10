@@ -15,7 +15,7 @@ class Solver():
         self.save_solution_states = config['save solution state']
         self.no_infeasible = 0
         
-        #self.solver_obj = SolverFactory(config['name'])
+        self.solver_obj = SolverFactory(config['name'])
         
     def solve(self):
         self.output = {}
