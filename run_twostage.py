@@ -88,7 +88,8 @@ config_form = {
     'solver': {
         'name': 'gams',
         'solve trajectories': False,
-        'io options': {'solver': 'conopt', 'tee': False, 'warmstart':True},
+        'tee': True,
+        'io options': {'solver': 'conopt', 'warmstart':True},
         'save output': False,
         'output map': {0: ['t_f', 'T', 'F_in'], 1: ['c']},
         'save solution state': False,

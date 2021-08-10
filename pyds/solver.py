@@ -8,6 +8,7 @@ import os
 class Solver():
     def __init__(self, parent, config):
         self.parent = parent
+        self.tee = config['tee']
         self.io_options = config['io options']
         self.io_options.setdefault('warmstart', True) #Required for solution!
         self.solve_trajectories = config['solve trajectories']
@@ -37,13 +38,13 @@ class Solver():
 
     def _solve_relaxation(self):
         self._reset_indicator_var()
-        self.relaxed_result = self.solver_obj.solve(self.model, **self.io_options)
+        self.relaxed_result = self.solver_obj.solve(self.model, tee=self.tee, io_options=self.io_options)
         if self.save_solution_states:
             self._generate_relaxation_output()
 
     def _solve_trajectories(self):
         self._fix_indicator_var()
-        self.trajectories_result = self.solver_obj.solve(self.model, **self.io_options)
+        self.trajectories_result = self.solver_obj.solve(self.model, self.tee, io_options=self.io_options)
         if self.save_solution_states:
             self._generate_trajectories_output()
 
