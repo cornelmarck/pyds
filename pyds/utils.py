@@ -123,6 +123,19 @@ def create_flattened_model(stage_rules):
         i(m, dummy_parent_models)
     return m          
 
+def load_input(model, input_map, input_values):
+        """Set the input parameters at a stage input_values.
+        Args:
+            input_values (dict of tuple, list): keys are tuple (stage_id, parameter_name), values are 2d array of 
+        """
+        for stage, values in input_values.items():
+            if not stage in input_map.keys():
+                raise ValueError('Undefined input binding: ' + str(stage))        
+            for param_idx, param_name in enumerate(input_map[stage]):
+                for scen_idx, scen in enumerate(scenarios_at_stage(model, stage)): #Scenario
+                    scen.component(param_name).set_value(values[scen_idx, param_idx])
+
+
 def raw_ouput_writer(m):
     """Return a dict which contains the values of all variables, objectives and parameters. 
 

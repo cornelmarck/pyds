@@ -10,7 +10,10 @@ class OutputManager:
         if exists(self.output_path_fnx):
             remove(self.output_path_fnx)
         
-        self.output = []
+        self.output = {
+            'solver': {},
+            'simulator': {}
+        }
 
     def add_run_to_output(self, data):
         self.output.append(data.copy())

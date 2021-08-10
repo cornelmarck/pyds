@@ -5,21 +5,17 @@ import numpy
 import pickle
 import os
 
-class GamsSolver():
-    def __init__(self, parent, solve_trajectories=True,
-                save_solution_states=False, warn_infeasible=True, **io_options):
+class Solver():
+    def __init__(self, parent, config):
         self.parent = parent
-        self.solver_obj = SolverFactory('gams')
-
-        self.save_solution_states = save_solution_states
-        self.solve_trajectories = solve_trajectories
-        self.warn_infeasible = warn_infeasible
+        self.io_options = config['io options']
+        self.io_options.setdefault('warmstart', True) #Required for solution!
+        self.solve_trajectories = config['solve trajectories']
+        self.warn_infeasible = config['warn infeasible']
+        self.save_solution_states = config['save solution state']
         self.no_infeasible = 0
-
-        self.options = io_options
-        self.options.setdefault('solver', 'conopt')
-        self.options.setdefault('tee', False)
-        self.options.setdefault('warmstart', True)
+        
+        #self.solver_obj = SolverFactory(config['name'])
         
     def solve(self):
         self.output = {}
@@ -41,13 +37,13 @@ class GamsSolver():
 
     def _solve_relaxation(self):
         self._reset_indicator_var()
-        self.relaxed_result = self.solver_obj.solve(self.model, **self.options)
+        self.relaxed_result = self.solver_obj.solve(self.model, **self.io_options)
         if self.save_solution_states:
             self._generate_relaxation_output()
 
     def _solve_trajectories(self):
         self._fix_indicator_var()
-        self.trajectories_result = self.solver_obj.solve(self.model, **self.options)
+        self.trajectories_result = self.solver_obj.solve(self.model, **self.io_options)
         if self.save_solution_states:
             self._generate_trajectories_output()
 

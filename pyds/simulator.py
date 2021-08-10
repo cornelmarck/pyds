@@ -1,4 +1,4 @@
-from pyds.utils import create_flattened_model, get_all_idx, get_scenario
+from pyds.utils import create_flattened_model, get_all_idx, get_scenario, load_input
 
 from pyomo.common.collections.component_map import ComponentMap
 from pyomo.core.expr.template_expr import IndexTemplate
@@ -8,36 +8,45 @@ from pyomo.dae.diffvar import DAE_Error
 import numpy as np
 
 class Simulator:
-    def __init__(self, parent, stage_rules, model_transformation, simulator_package='scipy', **simulator_kwargs):
+    def __init__(self, parent, config):
         self.parent = parent
-        self.stage_rules = stage_rules
-        self.model_transformation = model_transformation
-        self.simulator_package = simulator_package
-        self.simulator_kwargs = simulator_kwargs
+
+        self.stage_rules = parent.stage_rules
+        self.model_transformation = parent.model_transformation
+        self.enabled = config['enabled']
+        self.package = config['package']
+        self.suffix_name = config['suffix name']
+        self.kwargs = config['kwargs']
+        
         self.model = None
-        self._build_model()
+        self.simulator_obj = None
+        if self.enabled:
+            self._build_model()
+            self.simulator_obj = PyomoSimulator(self.model, self.package)
 
-        self.simulator_obj = PyomoSimulator(self.model, self.simulator_package)
-
-    def simulate_all_scenarios(self, input_values):
-        #This method assumes that the input parameters are already intialized
-        model = self.parent.model
+    def simulate_all_scenarios(self, output_model, input_values):
+        #Warning: This method only initializes time-varying variables, not input parameters
+        if not self.enabled:
+            return
+        model = output_model
         BFs = model.BFs
-        n_stages = model.n_stages
-
+        n_stages = model.n_stages   
         for s_idx in get_all_idx(BFs):
             input = {}
-            input[0] = input_values[0][0,:]
+            input[0] = input_values[0][None, 0,:]
             for s in range(1,n_stages-1):
-                input[s] = input_values[s][s_idx[s-1], :] 
-            self.simulate(input)
-            self.export_trajectories_to_model(model, s_idx)
+                input[s] = input_values[s][None, s_idx[s-1], :]
+            self._simulate(input)
+            self._export_trajectories_to_model(model, s_idx)
 
-    def simulate(self, input_values):
-        self._update_input(input_values)
-        self.simulator_obj.simulate(**self.simulator_kwargs)
+    def _simulate(self, input_values):
+        load_input(self.model, self.parent.input_map, input_values)
+        if self.suffix_name is not None:
+            suffix = self.model.component(self.suffix_name)
+            self.kwargs['varying_inputs'] = suffix
+        self.simulator_obj.simulate(**self.kwargs)
 
-    def export_trajectories_to_model(self, model, scenario_idx=None):        
+    def _export_trajectories_to_model(self, model, scenario_idx=None):        
         #Adapted from pyomo dae.simulator.initialize_model()
         def stages_to_update(idx):
             a = np.array(idx)
@@ -75,12 +84,12 @@ class Simulator:
     def get_sim_result(self):
         return (self.simulator_obj._tsim, self.simulator_obj._simsolution)
    
-    def _update_input(self, input_values):
-        for stage, value in input_values.items():
-            if not stage in self.parent.input_bindings.keys():
-                raise ValueError('Input is not defined for this problem')
-            for idx, param_name in enumerate(self.parent.input_bindings[stage]):
-                self.model.component(param_name).set_value(value[idx]) #TODO: Rewrite to 2d array convention
+    # def _update_input(self, input_values):
+    #     for stage, value in input_values.items():
+    #         if not stage in self.parent.input_map.keys():
+    #             raise ValueError('Input is not defined for this problem')
+    #         for idx, param_name in enumerate(self.parent.input_map[stage]):
+    #             self.model.component(param_name).set_value(value[idx]) #TODO: Rewrite to 2d array convention
     
     def _build_model(self):
         self.model = create_flattened_model(self.stage_rules)
