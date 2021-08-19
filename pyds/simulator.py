@@ -108,6 +108,7 @@ class Simulator:
             'var_names': [i._base.name for i in (self.simulator_obj._diffvars + self.simulator_obj._simalgvars)],
             'simsolution': self.simulator_obj._simsolution.copy()
         }
+        return container
 
     def get_sim_result(self):
         return (self.simulator_obj._tsim, self.simulator_obj._simsolution)
