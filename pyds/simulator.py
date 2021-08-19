@@ -86,21 +86,28 @@ class Simulator:
                         else:
                             continue
 
-    def _collect_output(self, model):
+    # def _collect_output(self, model):
+    #     container = {
+    #         'data': [],
+    #         'status': None
+    #     }
+    #     container['objective'] = utils.parse_value(model, 'obj')
+    #     all_idx = utils.get_all_idx(self.model.BFs)
+    #     for i, idx in enumerate(all_idx):
+    #         v = {}
+    #         for stage, names in self.parent.output_map.items():
+    #             scen = utils.get_scenario(model, idx[0:stage])
+    #             for n in names:
+    #                 v[n] = utils.parse_value(scen, n)
+    #         container['data'].append(v.copy())
+    #     return container
+
+    def _collect_output(self):
         container = {
-            'data': [],
-            'status': None
+            'tsim': self.simulator_obj._tsim.copy(),
+            'var_names': [i.name for i in (self.simulator_obj._diffvars + self.simulator_obj._simalgvars)],
+            'simsolution': self.simulator_obj._simsolution.copy()
         }
-        container['objective'] = utils.parse_value(model, 'obj')
-        all_idx = utils.get_all_idx(self.model.BFs)
-        for i, idx in enumerate(all_idx):
-            v = {}
-            for stage, names in self.parent.output_map.items():
-                scen = utils.get_scenario(model, idx[0:stage])
-                for n in names:
-                    v[n] = utils.parse_value(scen, n)
-            container['data'].append(v.copy())
-        return container
 
     def get_sim_result(self):
         return (self.simulator_obj._tsim, self.simulator_obj._simsolution)
