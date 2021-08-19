@@ -27,7 +27,7 @@ class Solver():
 
         self.output = {
             'relaxation': None,
-            'solution': None,
+            'trajectories': None,
         }
 
         #http://www.pyomo.org/blog/2015/1/8/accessing-solver
@@ -41,7 +41,7 @@ class Solver():
         
         if self.solve_trajectories and self.save_output:
             self._solve_trajectories()
-            self.output['solution'] = self._collect_output().copy()
+            self.output['trajectories'] = self._collect_output().copy()
 
     def _solve_relaxation(self):
         self._reset_indicator_var()
