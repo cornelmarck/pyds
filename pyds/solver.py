@@ -40,9 +40,7 @@ class Solver():
                 print('Warning: Infeasible relaxation. Total number of infeasible solves: {}'.format(self.no_infeasible))
             self.no_infeasible += 1 
             return
-        if self.save_output:
-            self.output['relaxation'] = self._collect_output().copy()
-
+        
         if self.solve_trajectories and self.save_output:
             self._solve_trajectories()
             self.output['solution'] = self._collect_output().copy()
@@ -50,12 +48,17 @@ class Solver():
     def _solve_relaxation(self):
         self._reset_indicator_var()
         self.relaxed_result = self.solver_obj.solve(self.model, tee=self.tee, io_options=self.io_options)
+
+        if self.save_output:
+            self.output['relaxation'] = self._collect_output().copy()
         if self.save_solution_states:
             self._generate_relaxation_output()
 
     def _solve_trajectories(self):
         self._fix_indicator_var()
-        self.trajectories_result = self.solver_obj.solve(self.model, self.tee, io_options=self.io_options)
+        self.trajectories_result = self.solver_obj.solve(self.model, tee=self.tee, io_options=self.io_options)
+        if self.save_output:
+            self.output['relaxation'] = self._collect_output().copy()
         if self.save_solution_states:
             self._generate_trajectories_output()
 
