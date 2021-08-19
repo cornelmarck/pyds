@@ -50,6 +50,7 @@ class Simulator:
                 self.output.append(self._collect_output().copy())
 
     def _simulate(self, input_values):
+        print(input_values)
         utils.load_input(self.model, {0: self.input_names}, {0: input_values})
         if self.suffix_name is not None:
             suffix = self.model.component(self.suffix_name)
