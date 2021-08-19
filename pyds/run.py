@@ -1,6 +1,6 @@
-from pyds.utils import (create_EF, load_input, scenarios_at_stage, get_scenario, get_final_scenarios, raw_ouput_writer)
 from pyds.solver import Solver
 from pyds.output_manager import OutputManager
+import pyds.utils as utils
 from pyomo.opt import SolverFactory
 from pyds.simulator import Simulator
 import numpy as np
@@ -30,11 +30,11 @@ class Manager():
         pass
 
     def _build_model(self, BFs):
-        self.model = create_EF(self.stage_rules, BFs)
+        self.model = utils.create_EF(self.stage_rules, BFs)
         self.model_transformation(self.model) 
 
     def scenario(self, idx):
-        return get_scenario(self.model, idx)                           
+        return utils.get_scenario(self.model, idx)                           
 
     def write_output_to_disk(self):
         self.output_manager.write_output_to_disk()
@@ -55,7 +55,7 @@ class TwoStageManager(Manager):
         for i, d_point in enumerate(d):
             g_mat = np.empty((n_p, 1))
             input = {0: np.array([d_point]), 1: p}
-            load_input(self.model, self.input_map, input)
+            utils.load_input(self.model, self.input_map, input)
             self.output_manager.add_input(input)
             self.simulator.simulate_all_scenarios(self.model, input)  
             self.solver.solve()
@@ -83,7 +83,7 @@ class ThreeStageManager(Manager):
         g_list = []
         #Iterate the design points d
         input = {1: d, 2: p}
-        load_input(self.model, self.input_map, input)
+        utils.load_input(self.model, self.input_map, input)
         self.simulator.simulate_all_scenarios(self.model, input)  
         self.solver.solve()
         ind_vars = self.solver._get_indicator_var_values()
