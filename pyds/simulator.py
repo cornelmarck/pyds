@@ -55,7 +55,6 @@ class Simulator:
             return [tuple(idx[:i+1]) for i in stages]
             
         tvals = list(self.simulator_obj._contset)
-
         # Build list of state and algebraic variables
         # that can be initialized
         initvars = self.simulator_obj._diffvars + self.simulator_obj._simalgvars
