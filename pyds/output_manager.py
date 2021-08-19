@@ -6,7 +6,7 @@ import atexit
 class OutputManager:
     def __init__(self, folder):
         self.output_filename = 'pyds_output'
-        self.output_path_fnx = join(folder, self.output_filename, '.pkl')
+        self.output_path_fnx = join(folder, self.output_filename + '.pkl')
         if exists(self.output_path_fnx):
             remove(self.output_path_fnx)
         
