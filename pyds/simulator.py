@@ -25,31 +25,30 @@ class Simulator:
             self._build_model()
             self.simulator_obj = PyomoSimulator(self.model, self.package)
 
-        self.input_map = {0: []}
+        self.input_names = []
         for stage, names in self.parent.input_map.items():
-            self.input_map[0].extend(names)
+            self.input_names.extend(names)
             
     def simulate_all_scenarios(self, output_model, input_values):
         #Warning: This method only initializes time-varying variables, not input parameters
         self.output = []
-
         if not self.enabled:
             return
         model = output_model
         BFs = model.BFs
         n_stages = model.n_stages   
         for s_idx in utils.get_all_idx(BFs):
-            input = {}
-            input[0] = input_values[0][None, 0,:]
-            for s in range(1,n_stages-1):
-                input[s] = input_values[s][None, s_idx[s-1], :]
-            self._simulate(input)
+            input = []
+            input.extend(input_values[0][0,:])
+            for s in range(1, n_stages-1):
+                input.extend(input_values[s][s_idx[s-1], :])
+            self._simulate([input])
             self._export_trajectories_to_model(model, s_idx)
             if self.save_output:
                 self.output.append(self._collect_output().copy())
 
     def _simulate(self, input_values):
-        utils.load_input(self.model, self.input_map, input_values)
+        utils.load_input(self.model, {0: self.input_names}, input_values)
         if self.suffix_name is not None:
             suffix = self.model.component(self.suffix_name)
             self.kwargs['varying_inputs'] = suffix
