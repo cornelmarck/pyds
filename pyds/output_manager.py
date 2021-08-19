@@ -15,17 +15,16 @@ class OutputManager:
     def clear_buffer(self):
         self.data = {
             'input': None,
-            'solution': {
-                'solver': {},
-                'simulator': {}
-            }
+            'solver': {},
+            'simulator': {}
         }
+        
 
     def add_solver_solution(self, container):
-        self.data['solution']['solver'].update(container.copy())
+        self.data['solver'].update(container.copy())
 
     def add_simulator_solution(self, container):
-        self.data['solution']['simulator'].update(container.copy())
+        self.data['simulator'].update(container.copy())
 
     def add_input(self, data):
         self.data['input'] = data.copy()

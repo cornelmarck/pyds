@@ -43,7 +43,7 @@ class Simulator:
             self._simulate(input)
             self._export_trajectories_to_model(model, s_idx)
             if self.save_output:
-                self.output.append(self._collect_output().copy())
+                self.output.append(self._collect_output(model).copy())
 
     def _simulate(self, input_values):
         utils.load_input(self.model, self.parent.input_map, input_values)
