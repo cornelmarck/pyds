@@ -32,13 +32,11 @@ class Solver():
 
         #http://www.pyomo.org/blog/2015/1/8/accessing-solver
         self._solve_relaxation()
-        self.is_infeasible = (self.relaxed_result['Solver'].termination_condition == TerminationCondition.infeasible)
-        if self.is_infeasible:
+        if (self.relaxed_result['Solver'].termination_condition == TerminationCondition.infeasible):
             self._set_infeasible_indicator_var()
             self.no_infeasible += 1 
             if self.warn_infeasible:    
                 print('Warning: Infeasible relaxation. Total number of infeasible solves: {}'.format(self.no_infeasible))
-            self.no_infeasible += 1 
             return
         
         if self.solve_trajectories and self.save_output:
@@ -104,7 +102,7 @@ class Solver():
         container = {
             'data': [],
             'objective': None,
-            'infeasible': self.is_infeasible
+            'infeasible': self.relaxed_result['Solver'].termination_condition == TerminationCondition.infeasible
         }
         container['objective'] = utils.parse_value(self.model, 'obj')
         all_idx = utils.get_all_idx(self.model.BFs)
