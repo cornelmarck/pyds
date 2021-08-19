@@ -10,20 +10,25 @@ class OutputManager:
         if exists(self.output_path_fnx):
             remove(self.output_path_fnx)
         
-        self.output = {
-            'solver': {},
-            'simulator': {}
+        self.data = {
+            'input': None,
+            'solution': {
+                'solver': {},
+                'simulator': {}
+            }
         }
 
-    def add_run_to_output(self, data):
-        self.output.append(data.copy())
+    def add_solver_solution(self, container):
+        self.data['solution']['solver'].update(container.copy())
 
-    def write_output_to_disk(self):
-        with open(self.output_path_fnx, 'wb') as f:
-            pickle.dump(self.output, f)
+    def add_simulator_solution(self, container):
+        self.data['solution']['simulator'].update(container.copy())
 
-    def write_directly(self, data):
+    def add_input(self, data):
+        self.data.input = data.copy()
+
+    def write_data_to_disk(self):
          with open(self.output_path_fnx, 'ab') as f:
-            pickle.dump(data, f)
+            pickle.dump(self.data, f)
 
 

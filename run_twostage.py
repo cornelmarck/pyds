@@ -24,7 +24,7 @@ def stage0_rule(m, stage=None):
     m.c_F_in = pyo.Constraint(m.t, rule=r_F_in)
     m.F_in_default = pyo.Suffix(direction=pyo.Suffix.LOCAL)
     m.F_in_default[m.F_in] = {0:0}
-    m.F_in_default[m.u] = {0:0}
+    #m.F_in_default[m.u] = {0:0}
 
 def stage1_rule(m, stage):
     t = stage[0].t
@@ -83,6 +83,7 @@ config_form = {
         'stage rules': [stage0_rule, stage1_rule],
         'model transformation': apply_collocation, #Post-construction model transformation
         'input map': {0: ['t_f', 'T'], 1: ['E1', 'E2', 'k1', 'k2']},
+        'output map': {1: ['c']},
         'output folder': os.getcwd()
     },
     'solver': {
@@ -91,7 +92,6 @@ config_form = {
         'tee': True,
         'io options': {'solver': 'conopt', 'warmstart':True},
         'save output': False,
-        'output map': {0: ['t_f', 'T', 'F_in'], 1: ['c']},
         'save solution state': False,
         'warn infeasible': True,
     },

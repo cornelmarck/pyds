@@ -125,6 +125,7 @@ def create_flattened_model(stage_rules):
 
 def load_input(model, input_map, input_values):
         """Set the input parameters at a stage input_values.
+
         Args:
             input_values (dict of tuple, list): keys are tuple (stage_id, parameter_name), values are 2d array of 
         """
@@ -134,9 +135,8 @@ def load_input(model, input_map, input_values):
             for param_idx, param_name in enumerate(input_map[stage]):
                 for scen_idx, scen in enumerate(scenarios_at_stage(model, stage)): #Scenario
                     scen.component(param_name).set_value(values[scen_idx, param_idx])
-
-
-def raw_ouput_writer(m):
+              
+def parse_value(m, name):
     """Return a dict which contains the values of all variables, objectives and parameters. 
 
     Args:
@@ -145,23 +145,30 @@ def raw_ouput_writer(m):
     Returns:
         [dict]: [description]
     """
-    output = {}
-    for i in m.component_data_objects(Var, active=True):
-        output[i.name] = i.value
+    c = m.component(name)
+    if c is None:
+        return None
 
-    for i in m.component_data_objects(Objective, active=True):
-        output[i.name] = i.expr()
-
-    for i in m.component_objects(Param):
-        if i.is_indexed():
-            for k, v in i.items():
-                name = '{}[{}]'.format(i.name, k)
-                output[name] = v
+    elif isinstance(c, Var):
+        if c.is_indexed():
+            var = {}
+            for k in c.keys():
+                var[k] = c[k].value
+            return var.copy()
         else:
-            output[i.name] = i.value    
-     
-    return output
+            return c.value
 
+    elif isinstance(c, Param):
+        if c.is_indexed():
+            p = {}
+            for k,v in c.items():
+                p[k] = v
+            return p.copy()
+        else:
+            return c.value
+
+    elif isinstance(c, Objective):
+        return c.expr()
 
 # def output_writer(m):
 #     """Return a dict which contains the values of all variables, objectives and parameters. 
@@ -195,6 +202,30 @@ def raw_ouput_writer(m):
 
 #     return output
 
+# def value_parser(m):
+#     """Return a dict which contains the values of all variables, objectives and parameters. 
+
+#     Args:
+#         m (Pyomo model): [description]
+
+#     Returns:
+#         [dict]: [description]
+#     """
+#     output = {}
+#     for i in m.component_data_objects(Var, active=True):
+#         output[i.name] = i.value
+
+#     for i in m.component_data_objects(Objective, active=True):
+#         output[i.name] = i.expr()
+
+#     for i in m.component_objects(Param):
+#         if i.is_indexed():
+#             for k, v in i.items():
+#                 name = '{}[{}]'.format(i.name, k)
+#                 output[name] = v
+#         else:
+#             output[i.name] = i.value    
+#     return output
 
 
 
