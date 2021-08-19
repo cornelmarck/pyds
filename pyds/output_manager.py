@@ -10,6 +10,9 @@ class OutputManager:
         if exists(self.output_path_fnx):
             remove(self.output_path_fnx)
         
+        self.clear_buffer()
+        
+    def clear_buffer(self):
         self.data = {
             'input': None,
             'solution': {
