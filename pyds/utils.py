@@ -71,10 +71,8 @@ def scenarios_at_stage(m, stage):
         m (ConcreteModel): The multi-stage model
         stage (int): target stage
     """
-    if stage==0:
-        return [m]
 
-    BFs = m.BFs[0:stage+1]
+    BFs = m.BFs[0:stage]
     return [get_scenario(m, i) for i in get_all_idx(BFs)]
 
 def get_scenario(m, idx):
