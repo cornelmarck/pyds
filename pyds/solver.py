@@ -112,7 +112,7 @@ class Solver():
                 v = {}
                 for n in names:
                     v[n] = utils.parse_value(scen, n)
-            container['data'].append(v.copy())
+                container['data'].append(v.copy())
         return container
 
 
