@@ -36,21 +36,19 @@ class Simulator:
             return
         model = output_model
         BFs = model.BFs
-        n_stages = model.n_stages   
+        n_stages = model.n_stages
         for s_idx in utils.get_all_idx(BFs):
             input = []
             input.extend(input_values[0][0,:])
-            for s in range(1, n_stages-1):
+            for s in range(1, n_stages):
                 input.extend(input_values[s][s_idx[s-1], :])
             input = np.array([input])
-            print(input)
             self._simulate(input)
             self._export_trajectories_to_model(model, s_idx)
             if self.save_output:
                 self.output.append(self._collect_output().copy())
 
     def _simulate(self, input_values):
-        print(input_values)
         utils.load_input(self.model, {0: self.input_names}, {0: input_values})
         if self.suffix_name is not None:
             suffix = self.model.component(self.suffix_name)
