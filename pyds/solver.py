@@ -106,10 +106,10 @@ class Solver():
         }
         container['objective'] = utils.parse_value(self.model, 'obj')
         all_idx = utils.get_all_idx(self.model.BFs)
-        for idx in all_idx:
+        for i, idx in enumerate(all_idx):
+            v = {}
             for stage, names in self.parent.output_map.items():
                 scen = utils.get_scenario(self.model, idx[0:stage])
-                v = {}
                 for n in names:
                     v[n] = utils.parse_value(scen, n)
                 container['data'].append(v.copy())
