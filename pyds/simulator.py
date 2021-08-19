@@ -42,7 +42,9 @@ class Simulator:
             input.extend(input_values[0][0,:])
             for s in range(1, n_stages-1):
                 input.extend(input_values[s][s_idx[s-1], :])
-            self._simulate(np.array([input]))
+            input = np.array([input])
+            print(input)
+            self._simulate(input)
             self._export_trajectories_to_model(model, s_idx)
             if self.save_output:
                 self.output.append(self._collect_output().copy())
