@@ -25,7 +25,10 @@ class Simulator:
             self._build_model()
             self.simulator_obj = PyomoSimulator(self.model, self.package)
 
-
+        self.input_map = {0: []}
+        for stage, names in self.parent.input_map.items():
+            self.input_map[0].extend(names)
+            
     def simulate_all_scenarios(self, output_model, input_values):
         #Warning: This method only initializes time-varying variables, not input parameters
         self.output = []
@@ -46,7 +49,7 @@ class Simulator:
                 self.output.append(self._collect_output().copy())
 
     def _simulate(self, input_values):
-        utils.load_input(self.model, self.parent.input_map, input_values)
+        utils.load_input(self.model, self.input_map, input_values)
         if self.suffix_name is not None:
             suffix = self.model.component(self.suffix_name)
             self.kwargs['varying_inputs'] = suffix
