@@ -49,16 +49,12 @@ class Solver():
 
         if self.save_output:
             self.output['relaxation'] = self._collect_output().copy()
-        if self.save_solution_states:
-            self._generate_relaxation_output()
 
     def _solve_trajectories(self):
         self._fix_indicator_var()
         self.trajectories_result = self.solver_obj.solve(self.model, tee=self.tee, io_options=self.io_options)
         if self.save_output:
-            self.output['relaxation'] = self._collect_output().copy()
-        if self.save_solution_states:
-            self._generate_trajectories_output()
+            self.output['trajectories'] = self._collect_output().copy()
 
     #Set all indicator variables to 1 if the solution is infeasible
     def _set_infeasible_indicator_var(self): 
@@ -115,15 +111,3 @@ class Solver():
             container['data'].append(v.copy())
         return container
 
-
-#Deprecated. Saving the full solution state is too slow. 
-    def _generate_relaxation_output(self):
-        self.output['relaxation'] = {'solver_result': self.relaxed_result, 
-                'model_data': utils.raw_ouput_writer(self.model),
-                'indicator_vars': self._get_indicator_var_values()}
-
-    def _generate_trajectories_output(self):
-        self.output['trajectories'] = {'solver_result': self.solution_result, 
-                'model_data': utils.raw_ouput_writer(self.model),
-                'indicator_vars': self._get_indicator_var_values()}
-        self.output['input_values'] = self.parent.input_values
