@@ -71,6 +71,8 @@ def scenarios_at_stage(m, stage):
         m (ConcreteModel): The multi-stage model
         stage (int): target stage
     """
+    if stage==0:
+        return [m]
 
     BFs = m.BFs[0:stage]
     return [get_scenario(m, i) for i in get_all_idx(BFs)]
@@ -116,6 +118,7 @@ def create_EF(stage_rules, BFs):
 
 def create_flattened_model(stage_rules):
     m = ConcreteModel()
+    m.BFs = [1]*(len(stage_rules)-1)
 
     dummy_parent_models = [m]*(len(stage_rules)-1)
     for i in stage_rules:
