@@ -107,7 +107,7 @@ class Solver():
         all_idx = utils.get_all_idx(self.model.BFs)
         for idx in all_idx:
             for stage, names in self.parent.output_map.items():
-                scen = utils.get_scenario(idx[:stage+1])
+                scen = utils.get_scenario(self.model, idx[:stage+1])
                 v = {}
                 for n in names:
                     v[n] = utils.parse_value(scen, n)
