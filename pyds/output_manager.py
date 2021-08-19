@@ -16,7 +16,7 @@ class OutputManager:
         self.data = {
             'input': None,
             'solver': {},
-            'simulator': {}
+            'simulator': None
         }
         
 
@@ -24,7 +24,7 @@ class OutputManager:
         self.data['solver'].update(container.copy())
 
     def add_simulator_solution(self, container):
-        self.data['simulator'].update(container.copy())
+        self.data['simulator'] = container.copy()
 
     def add_input(self, data):
         self.data['input'] = data.copy()
