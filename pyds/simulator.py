@@ -1,4 +1,4 @@
-from pyds.utils import create_flattened_model, get_all_idx, get_scenario, load_input
+import pyds.utils as utils
 
 from pyomo.common.collections.component_map import ComponentMap
 from pyomo.core.expr.template_expr import IndexTemplate
@@ -15,6 +15,7 @@ class Simulator:
         self.model_transformation = parent.model_transformation
         self.enabled = config['enabled']
         self.package = config['package']
+        self.save_output = config['save output']
         self.suffix_name = config['suffix name']
         self.kwargs = config['kwargs']
         
@@ -24,23 +25,28 @@ class Simulator:
             self._build_model()
             self.simulator_obj = PyomoSimulator(self.model, self.package)
 
+
     def simulate_all_scenarios(self, output_model, input_values):
         #Warning: This method only initializes time-varying variables, not input parameters
+        self.output = []
+
         if not self.enabled:
             return
         model = output_model
         BFs = model.BFs
         n_stages = model.n_stages   
-        for s_idx in get_all_idx(BFs):
+        for s_idx in utils.get_all_idx(BFs):
             input = {}
             input[0] = input_values[0][None, 0,:]
             for s in range(1,n_stages-1):
                 input[s] = input_values[s][None, s_idx[s-1], :]
             self._simulate(input)
             self._export_trajectories_to_model(model, s_idx)
+            if self.save_output:
+                self.output.append(self._collect_output().copy())
 
     def _simulate(self, input_values):
-        load_input(self.model, self.parent.input_map, input_values)
+        utils.load_input(self.model, self.parent.input_map, input_values)
         if self.suffix_name is not None:
             suffix = self.model.component(self.suffix_name)
             self.kwargs['varying_inputs'] = suffix
@@ -74,11 +80,27 @@ class Simulator:
                     model.component(v._base.local_name)[vidx].set_value(valinit[i])
                 else:
                     for idx in stages_to_update(scenario_idx):
-                        var = get_scenario(model, idx).component(v._base.local_name)
+                        var = utils.get_scenario(model, idx).component(v._base.local_name)
                         if var is not None:
                             var[vidx].set_value(valinit[i])
                         else:
                             continue
+
+    def _collect_output(self, model):
+        container = {
+            'data': [],
+            'status': None
+        }
+        container['objective'] = utils.parse_value(model, 'obj')
+        all_idx = utils.get_all_idx(self.model.BFs)
+        for i, idx in enumerate(all_idx):
+            v = {}
+            for stage, names in self.parent.output_map.items():
+                scen = utils.get_scenario(model, idx[0:stage])
+                for n in names:
+                    v[n] = utils.parse_value(scen, n)
+            container['data'].append(v.copy())
+        return container
 
     def get_sim_result(self):
         return (self.simulator_obj._tsim, self.simulator_obj._simsolution)
@@ -91,7 +113,7 @@ class Simulator:
     #             self.model.component(param_name).set_value(value[idx]) #TODO: Rewrite to 2d array convention
     
     def _build_model(self):
-        self.model = create_flattened_model(self.stage_rules)
+        self.model = utils.create_flattened_model(self.stage_rules)
         if self.model_transformation is not None:
             self.model_transformation(self.model)
 
