@@ -170,6 +170,7 @@ def parse_value(m, name):
     elif isinstance(c, Objective):
         return c.expr()
 
+
 # def output_writer(m):
 #     """Return a dict which contains the values of all variables, objectives and parameters. 
 
