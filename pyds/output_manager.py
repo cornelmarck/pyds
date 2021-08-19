@@ -28,7 +28,7 @@ class OutputManager:
         self.data['solution']['simulator'].update(container.copy())
 
     def add_input(self, data):
-        self.data.input = data.copy()
+        self.data['input'] = data.copy()
 
     def write_data_to_disk(self):
          with open(self.output_path_fnx, 'ab') as f:
