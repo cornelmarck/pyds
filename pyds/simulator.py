@@ -105,7 +105,7 @@ class Simulator:
     def _collect_output(self):
         container = {
             'tsim': self.simulator_obj._tsim.copy(),
-            'var_names': [i.name for i in (self.simulator_obj._diffvars + self.simulator_obj._simalgvars)],
+            'var_names': [i._base.name for i in (self.simulator_obj._diffvars + self.simulator_obj._simalgvars)],
             'simsolution': self.simulator_obj._simsolution.copy()
         }
 
