@@ -58,6 +58,7 @@ class TwoStageManager(Manager):
             utils.load_input(self.model, self.input_map, input)
             self.output_manager.add_input(input)
             self.simulator.simulate_all_scenarios(self.model, input)  
+            self.output_manager.add_simulator_solution(self.simulator.output)
             self.solver.solve()
             self.output_manager.add_solver_solution(self.solver.output)
             g_mat[:, 0] = -self.solver._get_indicator_var_values() #DEUS uses g>=0 inequality constraints, contrary to convention
