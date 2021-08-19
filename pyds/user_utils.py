@@ -1,4 +1,4 @@
- import pickle
+import pickle
 
 def read_output_file(filepath):
     objs = []
