@@ -83,8 +83,9 @@ def get_scenario(m, idx):
         m (ConcreteModel): Pyomo model
         idx (list or tuple of int): scenario index
     """
-    if isinstance(idx, int):
-        idx = (idx,)
+    if len(idx)==0:
+        return m
+        
     def recursive(obj, stage, idx):
         obj = obj.__getattribute__('Substage')[idx[stage-1]]
         if stage == len(idx):
