@@ -54,6 +54,7 @@ class Simulator:
             suffix = self.model.component(self.suffix_name)
             self.kwargs['varying_inputs'] = suffix
         self.simulator_obj.simulate(**self.kwargs)
+        self.simulator_obj.initialize_model()
 
     def _export_trajectories_to_model(self, model, scenario_idx=None):        
         #Adapted from pyomo dae.simulator.initialize_model()
