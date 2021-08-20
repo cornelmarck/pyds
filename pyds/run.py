@@ -68,8 +68,6 @@ class TwoStageManager(Manager):
 
         return g_list
 
-
-        
 class ThreeStageManager(Manager):
     def __init__(self, config):
         super().__init__(config)
@@ -86,13 +84,16 @@ class ThreeStageManager(Manager):
         #Iterate the design points d
         input = {1: d, 2: p}
         utils.load_input(self.model, self.input_map, input)
-        self.simulator.simulate_all_scenarios(self.model, input)  
+        self.output_manager.clear_buffer()
+        self.output_manager.add_input(input)
+        self.simulator.simulate_all_scenarios(self.model, input)
+        self.output_manager.add_simulator_solution(self.simulator.output)
         self.solver.solve()
-        ind_vars = self.solver._get_indicator_var_values()
+        self.output_manager.add_solver_solution(self.solver.output)
         for i, d_point in enumerate(d):
             g_mat = np.empty((n_p, 1))
             g_mat[:, 0] = -self.solver._get_indicator_var_values() #DEUS uses g>=0 inequality constraints, contrary to convention
             g_list.append(g_mat)
-            #self.output_manager.write_directly(self.solver.output)
+        self.output_manager.write_data_to_disk()
         return g_list
 
