@@ -47,8 +47,8 @@ class TwoStageManager(Manager):
     def g(self, d, p):
         #Rebuild the model and simulator if the BFs have changed
         n_p = np.shape(p)[0]
-        if self.model is None or self.model.BFs[0] != n_p:
-            self._build_model([n_p])
+        if self.model is None or self.model.BFs[1] != n_p:
+            self._build_model([1, n_p])
 
         g_list = []
         #Iterate the design points d
