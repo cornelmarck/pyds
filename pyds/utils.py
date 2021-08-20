@@ -71,10 +71,7 @@ def scenarios_at_stage(m, stage):
         m (ConcreteModel): The multi-stage model
         stage (int): target stage
     """
-    if stage==0:
-        return [m]
-
-    BFs = m.BFs[0:stage]
+    BFs = m.BFs[0:stage+1]
     return [get_scenario(m, i) for i in get_all_idx(BFs)]
 
 def get_scenario(m, idx):
@@ -83,42 +80,39 @@ def get_scenario(m, idx):
         m (ConcreteModel): Pyomo model
         idx (list or tuple of int): scenario index
     """
-    if len(idx)==0:
-        return m
-        
     def recursive(obj, stage, idx):
-        obj = obj.__getattribute__('Substage')[idx[stage-1]]
-        if stage == len(idx):
+        if stage == len(idx)-1:
             return obj
         else:
+            obj = obj.__getattribute__('Substage')[idx[stage+1]]
             return recursive(obj, stage+1, idx)
-    return recursive(m, 1, idx)    
+    return recursive(m, 0, idx)    
         
 def create_EF(stage_rules, BFs):
     ef = ConcreteModel()
-    ef.n_stages = len(BFs)+1
+    ef.n_stages = len(BFs)
     ef.BFs = BFs
     stages_dict = {}
 
     if ef.n_stages == 1:
         ValueError('Multistage model must contain more than one stage')
 
-    def recursive_block_rule(m, stage, n_stages, BFs, stages_dict):
+    def recursive_block_rule(m, stage, BFs, stages_dict): 
         stage_rules[stage](m, stages_dict)
-        if stage == n_stages-1: #Check whether last stage has been reached
+        if stage == len(BFs)-1: #Check whether last stage has been reached
             return
         stages_dict[stage] = m
-        m.add_component('Substage_idx', RangeSet(0, BFs[stage]-1))
+        m.add_component('Substage_idx', RangeSet(0, BFs[stage+1]-1))
         m.add_component('Substage', Block(m.Substage_idx, 
-            rule= lambda m: recursive_block_rule(m, stage+1, n_stages, BFs, stages_dict)))
+            rule= lambda m: recursive_block_rule(m, stage+1, BFs, stages_dict)))
 
-    recursive_block_rule(ef, 0, ef.n_stages, ef.BFs, stages_dict)
+    recursive_block_rule(ef, 0, ef.BFs, stages_dict)
     _create_objective(ef)
     return ef
 
 def create_flattened_model(stage_rules):
     m = ConcreteModel()
-    m.BFs = [1]*(len(stage_rules)-1)
+    m.BFs = [1]*(len(stage_rules))
 
     dummy_parent_models = [m]*(len(stage_rules)-1)
     for i in stage_rules:
@@ -135,8 +129,8 @@ def load_input(model, input_map, input_values):
             if not stage in input_map.keys():
                 raise ValueError('Undefined input binding: ' + str(stage))        
             for param_idx, param_name in enumerate(input_map[stage]):
-                for scen_idx, scen in enumerate(scenarios_at_stage(model, stage)): #Scenario
-                    scen.component(param_name).set_value(values[scen_idx, param_idx])
+                for scen_count, scen in enumerate(scenarios_at_stage(model, stage)): #Scenario
+                    scen.component(param_name).set_value(values[scen_count, param_idx])
               
 def parse_value(m, name):
     """Return a dict which contains the values of all variables, objectives and parameters. 

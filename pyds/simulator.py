@@ -39,9 +39,8 @@ class Simulator:
         n_stages = model.n_stages
         for s_idx in utils.get_all_idx(BFs):
             input = []
-            input.extend(input_values[0][0,:])
-            for s in range(1, n_stages):
-                input.extend(input_values[s][s_idx[s-1], :])
+            for s in range(0, n_stages):
+                input.extend(input_values[s][s_idx[s], :])
             input = np.array([input])
             self._simulate(input)
             self._export_trajectories_to_model(model, s_idx)
@@ -83,8 +82,8 @@ class Simulator:
                 if scenario_idx is None:
                     model.component(v._base.local_name)[vidx].set_value(valinit[i])
                 else:
-                    for idx in stages_to_update(scenario_idx):
-                        var = utils.get_scenario(model, idx).component(v._base.local_name)
+                    for s_idx in stages_to_update(scenario_idx):
+                        var = utils.get_scenario(model, s_idx).component(v._base.local_name)
                         if var is not None:
                             var[vidx].set_value(valinit[i])
                         else:

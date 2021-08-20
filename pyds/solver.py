@@ -105,7 +105,7 @@ class Solver():
         for i, idx in enumerate(all_idx):
             v = {}
             for stage, names in self.parent.output_map.items():
-                scen = utils.get_scenario(self.model, idx[0:stage])
+                scen = utils.get_scenario(self.model, idx[0:stage+1])
                 for n in names:
                     v[n] = utils.parse_value(scen, n)
             container['data'].append(v.copy())
