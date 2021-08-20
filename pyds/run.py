@@ -56,6 +56,7 @@ class TwoStageManager(Manager):
             g_mat = np.empty((n_p, 1))
             input = {0: np.array([d_point]), 1: p}
             utils.load_input(self.model, self.input_map, input)
+            self.output_manager.clear_buffer()
             self.output_manager.add_input(input)
             self.simulator.simulate_all_scenarios(self.model, input)  
             self.output_manager.add_simulator_solution(self.simulator.output)
@@ -64,7 +65,7 @@ class TwoStageManager(Manager):
             g_mat[:, 0] = -self.solver._get_indicator_var_values() #DEUS uses g>=0 inequality constraints, contrary to convention
             g_list.append(g_mat)
             self.output_manager.write_data_to_disk()
-            self.output_manager.clear_buffer()
+
         return g_list
 
 
