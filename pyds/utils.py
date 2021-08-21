@@ -125,6 +125,7 @@ def load_input(model, input_map, input_values):
         Args:
             input_values (dict of tuple, list): keys are tuple (stage_id, parameter_name), values are 2d array of 
         """
+        print(input_values)
         for stage, values in input_values.items():
             if not stage in input_map.keys():
                 raise ValueError('Undefined input binding: ' + str(stage))        
