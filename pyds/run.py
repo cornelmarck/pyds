@@ -75,7 +75,7 @@ class ThreeStageManager(Manager):
         #Rebuild the model and simulator if the BFs have changed
         n_d, d_dim = np.shape(d)
         n_p, p_dim = np.shape(p)
-        BFs = np.array([n_d, n_p])
+        BFs = np.array([1, n_d, n_p])
 
         if self.model is None or np.any(self.model.BFs != BFs):
             self._build_model(BFs)
