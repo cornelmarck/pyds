@@ -130,6 +130,7 @@ def load_input(model, input_map, input_values):
                 raise ValueError('Undefined input binding: ' + str(stage))        
             for param_idx, param_name in enumerate(input_map[stage]):
                 for scen_count, scen in enumerate(scenarios_at_stage(model, stage)): #Scenario
+                    print(values)
                     scen.component(param_name).set_value(values[scen_count, param_idx])
               
 def parse_value(m, name):
