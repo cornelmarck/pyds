@@ -91,7 +91,7 @@ class ThreeStageManager(Manager):
         self.solver.solve()
         self.output_manager.add_solver_solution(self.solver.output)
         for i, d_point in enumerate(d):
-            g_mat = np.empty((n_p, 1))
+            g_mat = np.empty((n_d*n_p, 1))
             g_mat[:, 0] = -self.solver._get_indicator_var_values() #DEUS uses g>=0 inequality constraints, contrary to convention
             g_list.append(g_mat)
         self.output_manager.write_data_to_disk()
