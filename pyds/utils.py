@@ -125,14 +125,11 @@ def load_input(model, input_map, input_values):
         Args:
             input_values (dict of tuple, list): keys are tuple (stage_id, parameter_name), values are 2d array of 
         """
-        print(input_values)
         for stage, values in input_values.items():
             if not stage in input_map.keys():
                 raise ValueError('Undefined input binding: ' + str(stage))        
             for param_idx, param_name in enumerate(input_map[stage]):
                 for scen_count, scen in enumerate(scenarios_at_stage(model, stage)): #Scenario
-                    print(scen_count)
-                    print(values)
                     scen.component(param_name).set_value(values[scen_count, param_idx])
               
 def parse_value(m, name):
