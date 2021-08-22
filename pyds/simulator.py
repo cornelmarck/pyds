@@ -39,7 +39,7 @@ class Simulator:
         n_stages = model.n_stages
         for s_idx in utils.get_all_idx(BFs):
             input = []
-            for s in range(0, n_stages):
+            for s in self.parent.input_map.keys():
                 input.extend(input_values[s][s_idx[s], :])
             input = np.array([input])
             self._simulate(input)

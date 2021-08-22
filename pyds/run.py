@@ -83,7 +83,6 @@ class ThreeStageManager(Manager):
         g_list = []
         #Iterate the design points d
         input = {1: d, 2: np.tile(p, (n_d*n_p,1))}
-        print(input)
         utils.load_input(self.model, self.input_map, input)
         self.output_manager.clear_buffer()
         self.output_manager.add_input(input)
