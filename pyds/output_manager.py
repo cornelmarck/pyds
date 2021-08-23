@@ -19,7 +19,6 @@ class OutputManager:
             'simulator': None
         }
         
-
     def add_solver_solution(self, container):
         self.data['solver'].update(container.copy())
 
