@@ -158,7 +158,7 @@ def parse_value(m, name):
         if c.is_indexed():
             p = {}
             for k,v in c.items():
-                p[k] = v
+                p[k] = v.value
             return p.copy()
         else:
             return c.value
