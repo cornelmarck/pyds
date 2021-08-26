@@ -99,7 +99,7 @@ class Solver():
         container = {
             'data': [],
             'objective': None,
-            'user time': self.solver.result['Solver'][0]['User time'],
+            'user time': self.result['Solver'][0]['User time'],
             'result': self.result,
             'infeasible': self.result['Solver'].termination_condition == TerminationCondition.infeasible
         }
