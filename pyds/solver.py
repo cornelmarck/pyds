@@ -10,6 +10,8 @@ class Solver():
     def __init__(self, parent, config):
         self.parent = parent
         self.tee = config['tee']
+        config.setdefault('use relaxation', True)
+        self.use_relaxation = config['use relaxation']
         self.io_options = config['io options']
         self.io_options.setdefault('warmstart', True) #Required for solution!
         self.solve_trajectories = config['solve trajectories']
@@ -22,22 +24,21 @@ class Solver():
         
     def solve(self):
         self.relaxed_result = None
-        self.relaxed_result = None
         self.model = self.parent.model
 
         self.output = {
             'relaxation': None,
             'trajectories': None,
         }
-
-        #http://www.pyomo.org/blog/2015/1/8/accessing-solver
-        self._solve_relaxation()
-        if (self.relaxed_result['Solver'].termination_condition == TerminationCondition.infeasible):
-            self._set_infeasible_indicator_var()
-            self.no_infeasible += 1 
-            if self.warn_infeasible:    
-                print('Warning: Infeasible relaxation. Total number of infeasible solves: {}'.format(self.no_infeasible))
-            return
+        if self.use_relaxation:
+            #http://www.pyomo.org/blog/2015/1/8/accessing-solver
+            self._solve_relaxation()
+            if (self.relaxed_result['Solver'].termination_condition == TerminationCondition.infeasible):
+                self._set_infeasible_indicator_var()
+                self.no_infeasible += 1 
+                if self.warn_infeasible:    
+                    print('Warning: Infeasible relaxation. Total number of infeasible solves: {}'.format(self.no_infeasible))
+                return
         
         if self.solve_trajectories and self.save_output:
             self._solve_trajectories()
