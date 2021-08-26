@@ -33,7 +33,7 @@ class Solver():
         if self.use_relaxation:
             #http://www.pyomo.org/blog/2015/1/8/accessing-solver
             self._solve_relaxation()
-            if (self.relaxed_result['Solver'].termination_condition == TerminationCondition.infeasible):
+            if (self.result['Solver'].termination_condition == TerminationCondition.infeasible):
                 self._set_infeasible_indicator_var()
                 self.no_infeasible += 1 
                 if self.warn_infeasible:    
