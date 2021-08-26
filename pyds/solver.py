@@ -99,6 +99,8 @@ class Solver():
         container = {
             'data': [],
             'objective': None,
+            'user time': self.solver.result['Solver'][0]['User time'],
+            'result': self.result,
             'infeasible': self.result['Solver'].termination_condition == TerminationCondition.infeasible
         }
         container['objective'] = utils.parse_value(self.model, 'obj')
