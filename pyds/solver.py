@@ -23,7 +23,7 @@ class Solver():
         self.solver_obj = SolverFactory(config['name'])
         
     def solve(self):
-        self.relaxed_result = None
+        self.result = None
         self.model = self.parent.model
 
         self.output = {
@@ -46,14 +46,14 @@ class Solver():
 
     def _solve_relaxation(self):
         self._reset_indicator_var()
-        self.relaxed_result = self.solver_obj.solve(self.model, tee=self.tee, io_options=self.io_options)
+        self.result = self.solver_obj.solve(self.model, tee=self.tee, io_options=self.io_options)
 
         if self.save_output:
             self.output['relaxation'] = self._collect_output().copy()
 
     def _solve_trajectories(self):
         self._fix_indicator_var()
-        self.trajectories_result = self.solver_obj.solve(self.model, tee=self.tee, io_options=self.io_options)
+        self.result = self.solver_obj.solve(self.model, tee=self.tee, io_options=self.io_options)
         if self.save_output:
             self.output['trajectories'] = self._collect_output().copy()
 
@@ -99,7 +99,7 @@ class Solver():
         container = {
             'data': [],
             'objective': None,
-            'infeasible': self.relaxed_result['Solver'].termination_condition == TerminationCondition.infeasible
+            'infeasible': self.result['Solver'].termination_condition == TerminationCondition.infeasible
         }
         container['objective'] = utils.parse_value(self.model, 'obj')
         all_idx = utils.get_all_idx(self.model.BFs)
