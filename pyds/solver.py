@@ -22,7 +22,9 @@ class Solver():
         self.no_infeasible = 0
         
         self.solver_obj = SolverFactory(config['name'])
-        
+        if self.use_relaxation:
+            TransformationFactory('core.relax_integer_vars').apply_to(self.parent.model)
+
     def solve(self):
         self.result = None
         self.model = self.parent.model
@@ -32,7 +34,6 @@ class Solver():
             'trajectories': None,
         }
         if self.use_relaxation:
-            TransformationFactory('core.relax_integer_vars').apply_to(self.model)
             #http://www.pyomo.org/blog/2015/1/8/accessing-solver
             self._solve_relaxation()
             if (self.result['Solver'].termination_condition == TerminationCondition.infeasible):
