@@ -4,6 +4,7 @@ from pyomo.common.collections.component_map import ComponentMap
 from pyomo.core.expr.template_expr import IndexTemplate
 from pyomo.dae import Simulator as PyomoSimulator
 from pyomo.dae.diffvar import DAE_Error
+import time
 
 import numpy as np
 
@@ -21,6 +22,7 @@ class Simulator:
         
         self.model = None
         self.simulator_obj = None
+        self.user_time = None
         if self.enabled:
             self._build_model()
             self.simulator_obj = PyomoSimulator(self.model, self.package)
@@ -31,6 +33,7 @@ class Simulator:
             
     def simulate_all_scenarios(self, output_model, input_values):
         #Warning: This method only initializes time-varying variables, not input parameters
+        t0 = time.time()
         self.output = []
         if not self.enabled:
             return
@@ -46,6 +49,7 @@ class Simulator:
             self._export_trajectories_to_model(model, s_idx)
             if self.save_output:
                 self.output.append(self._collect_output().copy())
+        self.user_time = time.time()-t0
 
     def _simulate(self, input_values):
         utils.load_input(self.model, {0: self.input_names}, {0: input_values})
@@ -107,6 +111,7 @@ class Simulator:
 
     def _collect_output(self):
         container = {
+            'user time': self.user_time,
             'tsim': self.simulator_obj._tsim.copy(),
             'var_names': [i._base.name for i in (self.simulator_obj._diffvars + self.simulator_obj._simalgvars)],
             'simsolution': self.simulator_obj._simsolution.copy()

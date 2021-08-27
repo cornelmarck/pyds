@@ -46,13 +46,12 @@ class Solver():
 
     def _solve_relaxation(self):
         self._reset_indicator_var()
-        self.result = self.solver_obj.solve(self.model, tee=self.tee, io_options=self.io_options)
-
+        self.result = self.solver_obj.solve(self.model, tee=self.tee, io_options=self.io_options)   
         if self.save_output:
             self.output['relaxation'] = self._collect_output().copy()
+        self._fix_indicator_var()
 
     def _solve_trajectories(self):
-        self._fix_indicator_var()
         self.result = self.solver_obj.solve(self.model, tee=self.tee, io_options=self.io_options)
         if self.save_output:
             self.output['trajectories'] = self._collect_output().copy()
