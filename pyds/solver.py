@@ -101,7 +101,7 @@ class Solver():
             'data': [],
             'objective': None,
             'user time': self.result['Solver'][0]['User time'],
-            'result': self.result,
+             #'result': self.result, #Disabled due to pickling weakref error
             'infeasible': self.result['Solver'].termination_condition == TerminationCondition.infeasible
         }
         container['objective'] = utils.parse_value(self.model, 'obj')
