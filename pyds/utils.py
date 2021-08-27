@@ -1,5 +1,6 @@
 from pyomo.core.base import (ConcreteModel, Block, RangeSet, Constraint, ConstraintList, Param, Var)
 from pyomo.core.base.objective import Objective, maximize
+from pyomo.core.base.set import Binary
 from itertools import product
 from math import prod
 
@@ -20,7 +21,7 @@ def add_BigMConstraint(model, name, bigM_constant, *args, **kwargs):
     constraint = Constraint(*args, **kwargs)
     constraint.construct()
     if not hasattr(model, '_indicator_var'):
-        model._indicator_var = Var(initialize=0, bounds=(0,1))
+        model._indicator_var = Var(initialize=0, within=Binary, bounds=(0,1))
     indicator_var = model._indicator_var
 
     if (constraint.lower is None) & (constraint.upper is not None):

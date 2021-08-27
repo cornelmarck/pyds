@@ -1,5 +1,6 @@
 from pyomo.core.base import param
-from pyomo.opt import (SolverFactory, TerminationCondition)
+from pyomo.core.base.transformation import TransformationFactory
+from pyomo.opt import (SolverFactory,  TerminationCondition)
 import numpy
 import pickle
 import os
@@ -31,6 +32,7 @@ class Solver():
             'trajectories': None,
         }
         if self.use_relaxation:
+            TransformationFactory('core.relax_integer_vars').apply_to(self.model)
             #http://www.pyomo.org/blog/2015/1/8/accessing-solver
             self._solve_relaxation()
             if (self.result['Solver'].termination_condition == TerminationCondition.infeasible):
